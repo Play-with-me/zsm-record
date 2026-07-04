@@ -61,11 +61,18 @@ async def reseed_cars():
             cars_to_add.append((name, current_class))
 
     async with AsyncSessionLocal() as session:
-        # Delete ALL cars first
-        await session.execute(delete(Car))
-        # Re-add from file
+        from sqlalchemy.future import select
+        
+        # Upsert Cars
+        result = await session.execute(select(Car))
+        existing_cars = {c.name: c for c in result.scalars().all()}
+        
         for name, car_class in cars_to_add:
-            session.add(Car(name=name, car_class=car_class))
+            if name in existing_cars:
+                existing_cars[name].car_class = car_class
+            else:
+                session.add(Car(name=name, car_class=car_class))
+                
         await session.commit()
     print(f"[OK] Reseed cars: da them {len(cars_to_add)} xe (A/T phan loai chinh xac).")
 
@@ -94,11 +101,16 @@ async def reseed_pets():
             seen.add(name)
 
     async with AsyncSessionLocal() as session:
-        # Delete ALL pets first
-        await session.execute(delete(Pet))
-        # Re-add from file
+        from sqlalchemy.future import select
+        
+        # Upsert Pets
+        result = await session.execute(select(Pet))
+        existing_pets = {p.name: p for p in result.scalars().all()}
+        
         for name in pets_to_add:
-            session.add(Pet(name=name))
+            if name not in existing_pets:
+                session.add(Pet(name=name))
+                
         await session.commit()
     print(f"[OK] Reseed pets: da them {len(pets_to_add)} pet.")
 
@@ -139,11 +151,19 @@ async def reseed_maps():
 
     async with AsyncSessionLocal() as session:
         from .models import Map
-        # Delete ALL maps first
-        await session.execute(delete(Map))
-        # Re-add from file
+        from sqlalchemy.future import select
+        
+        # Get existing maps
+        result = await session.execute(select(Map))
+        existing_maps = {m.name: m for m in result.scalars().all()}
+        
+        # Upsert maps
         for name, diff in maps_to_add:
-            session.add(Map(name=name, difficulty=diff))
+            if name in existing_maps:
+                existing_maps[name].difficulty = diff
+            else:
+                session.add(Map(name=name, difficulty=diff))
+                
         await session.commit()
     print(f"[OK] Reseed maps: da them {len(maps_to_add)} map voi do kho (sao).")
 
@@ -153,6 +173,11 @@ async def reseed_maps():
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        try:
+            await conn.execute(text("ALTER TABLE maps ADD COLUMN difficulty INTEGER DEFAULT 1"))
+        except Exception:
+            pass
+
     try:
         await reseed_maps()
         await reseed_cars()
