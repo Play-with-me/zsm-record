@@ -6,7 +6,7 @@
   <title>TNX Record - Tenvyx Clan ZingSpeed Mobile</title>
   <meta name="description" content="Kho lưu trữ và bảng xếp hạng kỷ lục tốc độ của Tenvyx Clan (TNX) - ZingSpeed Mobile." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -15,9 +15,9 @@
       --bg-input: rgba(0,0,0,0.5);
       --border: rgba(255,255,255,0.07);
       --border-active: rgba(220,38,38,0.6);
-      --text: #f5f0f0;
-      --text-muted: #9e8b8b;
-      --text-dim: #5c4a4a;
+      --text: #f0f0f5;
+      --text-muted: #8b8b9e;
+      --text-dim: #4a4a5c;
       --blue: #3b82f6;
       --blue-hover: #60a5fa;
       --purple: #8b5cf6;
@@ -53,6 +53,16 @@
     }
     #app, .navbar { position:relative; z-index:1; }
 
+        /* Animations */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 var(--red-glow); } 70% { box-shadow: 0 0 0 10px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .card-hover { transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); }
 
     /* SCROLLBAR */
     ::-webkit-scrollbar { width:5px; }
@@ -76,10 +86,12 @@
       height:60px; display:flex; align-items:center; justify-content:space-between; gap:20px;
     }
     .logo {
-      font-size:1.2rem; font-weight:900; letter-spacing:-0.04em; flex-shrink:0;
-      display:flex; align-items:center; gap:6px;
+      font-size:1.4rem; font-weight:900; letter-spacing:-0.04em; flex-shrink:0;
+      display:flex; align-items:center; gap:8px;
       color:var(--red); font-family:'Rajdhani', sans-serif; text-transform:uppercase;
+      text-shadow: 0 0 10px rgba(220,38,38,0.3); transition: transform 0.3s ease;
     }
+    .logo:hover { transform: scale(1.05); }
     .nav-links { display:flex; align-items:center; gap:4px; }
     .nav-link {
       padding:6px 12px; border-radius:8px; font-size:0.85rem; font-weight:500;
@@ -281,8 +293,9 @@
     .hero-content { position:relative; z-index:1; }
     .hero h1 { font-size:clamp(2.2rem,6vw,3.8rem); font-weight:900; letter-spacing:-0.04em; line-height:1.1; }
     .hero .grad {
-      background:linear-gradient(135deg, var(--red-light), var(--red));
+      background:linear-gradient(135deg, var(--red-light), var(--red), #fca5a5);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+      font-family:'Rajdhani', sans-serif; text-transform:uppercase;
     }
     .hero p { font-size:1.05rem; color:var(--text-muted); max-width:500px; margin:18px auto 0; }
     .hero-actions { display:flex; justify-content:center; gap:10px; margin-top:28px; flex-wrap:wrap; }
@@ -443,7 +456,7 @@
 
 <nav class="navbar">
   <div class="navbar-inner">
-    <a href="#/" class="logo"><img src="Logo-clan.jpg" alt="TNX" style="height:28px; width:auto; border-radius:4px; object-fit:contain;"/> TNX Record</a>
+    <a href="#/" class="logo"><img src="Logo-clan.jpg" alt="TNX" style="height:32px; width:auto; border-radius:4px; object-fit:contain;"/> TNX Record</a>
     <div class="nav-links">
       <a href="#/" class="nav-link" data-route="/">Trang chủ</a>
       <a href="#/board" class="nav-link" data-route="/board">Bảng Xếp Hạng</a>
@@ -472,11 +485,11 @@ const API = window.location.hostname === 'localhost' || window.location.hostname
   ? 'http://localhost:8001/api/v1' 
   : 'https://zsm-record-backend.onrender.com/api/v1';
 
-// ——————————————————————————————————————————————————
+// ─── STATE ───────────────────────────────────────────
 let currentUser = null;
 let searchTimeout = null;
 
-// ——————————————————————————————————————————————————
+// ─── UTILS ───────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const esc = str => { if(!str) return ''; const d=document.createElement('div'); d.textContent=str; return d.innerHTML; };
 
@@ -493,7 +506,7 @@ function getToken() { return localStorage.getItem('zsm_token'); }
 function setToken(t) { localStorage.setItem('zsm_token',t); }
 function clearToken() { localStorage.removeItem('zsm_token'); }
 
-// ————————————————————————————————————————————————————
+// ─── API ─────────────────────────────────────────────
 async function apiFetch(path, opts={}) {
   const h={'Content-Type':'application/json',...(opts.headers||{})};
   if(getToken()) h['Authorization']=`Bearer ${getToken()}`;
@@ -507,14 +520,14 @@ async function fetchUser() {
   catch { currentUser=null; clearToken(); }
 }
 
-// ——————————————————————————————————————————————————
+// ─── TOAST ───────────────────────────────────────────
 function toast(msg, type='success') {
   const c=$('toasts'), t=document.createElement('div');
   t.className=`toast toast-${type}`; t.textContent=msg; c.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},3000);
 }
 
-// ————————————————————————————————————————————————————
+// ─── NAV ─────────────────────────────────────────────
 function renderNav() {
   const el=$('nav-auth');
   // Update active link
@@ -565,7 +578,7 @@ document.addEventListener('click',e=>{ if(!e.target.closest('.user-menu')) close
 function logout() { clearToken(); currentUser=null; renderNav(); toast('Đã đăng xuất'); navigate('/'); }
 function navigate(p) { window.location.hash=p; }
 
-// ——————————————————————————————————————————————————
+// ─── COMBOBOX ─────────────────────────────────────────
 function mkCombobox(id, opts, placeholder, val='') {
   const sel=opts.find(o=>o.value===val);
   return `<div class="combobox" id="cb-${id}">
@@ -621,11 +634,11 @@ document.addEventListener('click',e=>{
   }
 });
 
-// ——————————————————————————————————————————————————
+// ─── SKELETON ─────────────────────────────────────────
 const skCards=n=>Array(n).fill('').map(()=>`<div class="card"><div class="skeleton" style="aspect-ratio:16/9;border-radius:var(--radius) var(--radius) 0 0"></div><div class="card-body"><div class="skeleton" style="height:15px;width:55%;margin-bottom:7px"></div><div class="skeleton" style="height:12px;width:38%"></div></div></div>`).join('');
 const skRows=n=>Array(n).fill('').map(()=>`<tr>${Array(6).fill('').map(()=>'<td><div class="skeleton" style="height:18px"></div></td>').join('')}</tr>`).join('');
 
-// ——————————————————————————————————————————————————
+// ─── GLOBAL SEARCH ────────────────────────────────────
 async function onSearchInput(q) {
   const sr=$('search-results'); if(!q.trim()){ sr.style.display='none'; return; }
   clearTimeout(searchTimeout);
@@ -656,7 +669,7 @@ async function onSearchInput(q) {
 }
 document.addEventListener('click',e=>{if(!e.target.closest('#global-search')&&!e.target.closest('#search-results'))$('search-results').style.display='none';});
 
-// ——————————————————————————————————————————————————
+// ─── DELETE CONFIRM MODAL ─────────────────────────────
 function confirmDelete(videoId, title) {
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
@@ -677,28 +690,26 @@ async function doDelete(id, overlay) {
   } catch(e) { toast(e.message,'error'); }
 }
 
-// ——————————————————————————————————————————————————
+// ════════════════════════════════════════════════════
 //                       PAGES
-// ——————————————————————————————————————————————————
+// ════════════════════════════════════════════════════
 
-// ——————————————————————————————————————————————————
+// ── HOME ──────────────────────────────────────────────
 async function renderHome() {
   $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:36px;">
-    <section class="hero">
-      <div class="hero-content">
-        <h1>Kho Dữ Liệu Tốc Độ<br><span class="grad" style="font-family:'Rajdhani', sans-serif; font-size:1.1em;">TENVYX CLAN (TNX)</span></h1>
-        <p style="color:var(--text-muted);margin:16px auto;max-width:500px;line-height:1.5">Lưu trữ, vinh danh kỷ lục và chia sẻ kỹ năng của các thành viên Tenvyx.</p>
-        <div style="display:flex;gap:12px;justify-content:center">
-          <a href="#/board" class="btn btn-purple" style="padding:12px 28px">&#127942; Bảng Xếp Hạng</a>
-          <a href="#/upload" class="btn btn-outline" style="padding:12px 28px">&#9650; Đăng Record</a>
-        </div>
-        <div class="hero-stats" id="hero-stats">
-          <div class="hero-stat"><div class="skeleton" style="height:28px;width:50px;margin-bottom:4px"></div><div class="skeleton" style="height:12px;width:50px"></div></div>
-          <div class="hero-stat"><div class="skeleton" style="height:28px;width:50px;margin-bottom:4px"></div><div class="skeleton" style="height:12px;width:50px"></div></div>
-          <div class="hero-stat"><div class="skeleton" style="height:28px;width:50px;margin-bottom:4px"></div><div class="skeleton" style="height:12px;width:50px"></div></div>
-        </div>
+    <section class="hero"><div class="hero-content">
+      <h1 class="animate-up">Kho Dữ Liệu Tốc Độ<br><span class="grad" style="font-size:1.1em;">TENVYX CLAN (TNX)</span></h1>
+      <p class="animate-up delay-1" style="color:var(--text-muted);font-size:1.1rem;line-height:1.6;">Lưu trữ, vinh danh kỷ lục và chia sẻ kỹ năng của các tay đua xuất sắc nhất thuộc Tenvyx Clan.</p>
+      <div class="hero-actions animate-up delay-2">
+        <a href="#/board" class="btn btn-purple" style="padding:12px 28px">&#127942; Bảng Xếp Hạng</a>
+        <a href="#/upload" class="btn btn-outline" style="padding:12px 28px">&#9650; Đăng Record</a>
       </div>
-    </section>
+      <div class="hero-stats animate-up delay-3" id="hero-stats">
+        <div class="hero-stat"><div class="skeleton" style="height:28px;width:50px;margin-bottom:4px"></div><div class="skeleton" style="height:12px;width:50px"></div></div>
+        <div class="hero-stat"><div class="skeleton" style="height:28px;width:50px;margin-bottom:4px"></div><div class="skeleton" style="height:12px;width:50px"></div></div>
+        <div class="hero-stat"><div class="skeleton" style="height:28px;width:50px;margin-bottom:4px"></div><div class="skeleton" style="height:12px;width:50px"></div></div>
+      </div>
+    </div></section>
     <section>
       <div class="section-header">
         <h2>Record Mới Nhất</h2>
@@ -745,17 +756,18 @@ function videoCard(v) {
   </a>`;
 }
 
-// ——————————————————————————————————————————————————
+// ── LOGIN ─────────────────────────────────────────────
 function renderLogin() {
   $('app').innerHTML=`<div class="auth-wrap animate-in"><div class="auth-card card"><div class="card-body-lg">
-    <div style="text-align:center;margin-bottom:24px">
-      <h2 style="font-size:1.5rem;margin-bottom:8px">Đăng nhập</h2>
-      <p class="auth-desc">Chào mừng trở lại, tay đua!</p>
-    </div>
+    <h1 class="auth-title">&#128274; Đăng nhập</h1>
+    <p class="auth-desc">Chào mừng trở lại căn cứ TNX!</p>
     <form id="lf" style="display:flex;flex-direction:column;gap:14px;">
       <div class="form-group"><label class="form-label">Tài khoản</label><input class="form-input" name="u" placeholder="Nhập tài khoản" required /></div>
-      <div class="form-group"><label class="form-label">Mật khẩu</label><div style="position:relative;"><input class="form-input" type="password" name="p" placeholder="Nhập mật khẩu" required style="padding-right:40px;"/><button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;">&#128065;</button></div></div>
-      <button class="btn btn-primary" type="submit" id="lb">Đăng nhập</button>
+      <div class="form-group"><label class="form-label">Mật khẩu</label><div style="position:relative;">
+        <input class="form-input" type="password" name="p" placeholder="Nhập mật khẩu" required  style="padding-right:40px;"/>
+        <button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;transition:color 0.2s;">&#128065;</button>
+      </div></div>
+      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;" type="submit" id="lb">Đăng nhập</button>
     </form>
     <div class="auth-foot">Chưa có tài khoản? <a href="#/register">Đăng ký tại đây</a></div>
   </div></div></div>`;
@@ -771,38 +783,45 @@ function renderLogin() {
   };
 }
 
-// ——————————————————————————————————————————————————
+// ── REGISTER ──────────────────────────────────────────
 function renderRegister() {
   $('app').innerHTML=`<div class="auth-wrap animate-in"><div class="auth-card card"><div class="card-body-lg">
-    <div style="text-align:center;margin-bottom:24px">
-      <h2 style="font-size:1.5rem;margin-bottom:8px">Đăng ký</h2>
-      <p class="auth-desc">Tham gia cùng các tay đua Tenvyx Clan!</p>
-    </div>
+    <h1 class="auth-title">&#128293; Đăng ký</h1>
+    <p class="auth-desc">Trở thành tay đua chính thức của Tenvyx Clan!</p>
     <form id="rf" style="display:flex;flex-direction:column;gap:14px;">
       <div class="form-group"><label class="form-label">Tài khoản</label><input class="form-input" name="u" placeholder="Tối thiểu 3 ký tự" required minlength="3"/></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" name="e" placeholder="email@cua-ban.com" required /></div>
+      <div class="form-group"><label class="form-label">Mật khẩu</label><div style="position:relative;">
+        <input class="form-input" type="password" name="p" placeholder="Tối thiểu 6 ký tự" required minlength="6" style="padding-right:40px;"/>
+        <button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;transition:color 0.2s;">&#128065;</button>
+      </div></div>
+      <div class="form-group"><label class="form-label">Xác nhận mật khẩu</label><div style="position:relative;">
+        <input class="form-input" type="password" name="c" placeholder="Nhập lại mật khẩu" required  style="padding-right:40px;"/>
+        <button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;transition:color 0.2s;">&#128065;</button>
+      </div></div>
+      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;" type="submit" id="rb">Tạo tài khoản</button>
     </form>
-    <div class="auth-foot">ÄÃ£ lÃ  thÃ nh viÃªn? <a href="#/login">ÄÄƒng nháº­p táº¡i Ä‘Ã¢y</a></div>
+    <div class="auth-foot">Đã là thành viên? <a href="#/login">Đăng nhập tại đây</a></div>
   </div></div></div>`;
   $('rf').onsubmit=async e=>{
     e.preventDefault();
-    if(e.target.p.value!==e.target.c.value){toast('Máº­t kháº©u khÃ´ng khá»›p!','error');return;}
-    const b=$('rb'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Äang táº¡o...';
+    if(e.target.p.value!==e.target.c.value){toast('Mật khẩu không khớp!','error');return;}
+    const b=$('rb'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tạo...';
     try {
       await apiFetch('/auth/register',{method:'POST',body:JSON.stringify({username:e.target.u.value,email:e.target.e.value,password:e.target.p.value})});
-      toast('Táº¡o tÃ i khoáº£n thÃ nh cÃ´ng! Vui lÃ²ng Ä‘Äƒng nháº­p.'); navigate('/login');
-    } catch(err){ toast(err.message,'error'); b.disabled=false; b.textContent='Táº¡o tÃ i khoáº£n'; }
+      toast('Tạo tài khoản thành công! Vui lòng đăng nhập.'); navigate('/login');
+    } catch(err){ toast(err.message,'error'); b.disabled=false; b.textContent='Tạo tài khoản'; }
   };
 }
 
-// â”€â”€ UPLOAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── UPLOAD ────────────────────────────────────────────
 async function renderUpload() {
-  if(!getToken()){ toast('Vui lÃ²ng Ä‘Äƒng nháº­p trÆ°á»›c','error'); navigate('/login'); return; }
+  if(!getToken()){ toast('Vui lòng đăng nhập trước','error'); navigate('/login'); return; }
   $('app').innerHTML=`<div class="animate-in" style="max-width:680px;margin:0 auto">${skCards(1)}</div>`;
   const [maps,cars,pets]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets')]);
   $('app').innerHTML=`<div class="animate-in" style="max-width:680px;margin:0 auto;">
-    <h1 style="font-size:1.7rem;font-weight:800;margin-bottom:6px">&#9650; ÄÄƒng Record</h1>
-    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:22px">Chia sáº» ká»· lá»¥c Ä‘á»‰nh cao cá»§a báº¡n vá»›i cá»™ng Ä‘á»“ng.</p>
+    <h1 style="font-size:1.7rem;font-weight:800;margin-bottom:6px">&#9650; Đăng Record</h1>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:22px">Chia sẻ kỷ lục đỉnh cao của bạn với cộng đồng.</p>
     <div class="card"><div class="card-body-lg">
     <form id="uf" style="display:flex;flex-direction:column;gap:18px;">
       <div class="form-group">
@@ -810,72 +829,72 @@ async function renderUpload() {
         <input class="form-input" type="file" name="vfile" accept="video/mp4,video/webm" required />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div class="form-group"><label class="form-label">Báº£n Ä‘á»“ *</label>${mkCombobox('map',maps.map(m=>({label:m.name,value:m.id})),'Chá»n báº£n Ä‘á»“...')}</div>
-        <div class="form-group"><label class="form-label">SiÃªu xe *</label>${mkCombobox('car',cars.map(c=>({label:c.name,value:c.id})),'Chá»n siÃªu xe...')}</div>
+        <div class="form-group"><label class="form-label">Bản đồ *</label>${mkCombobox('map',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...')}</div>
+        <div class="form-group"><label class="form-label">Siêu xe *</label>${mkCombobox('car',cars.map(c=>({label:c.name,value:c.id})),'Chọn siêu xe...')}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
-          <label class="form-label">Thá»i gian * <span style="color:var(--text-dim)">(p:gg.mmm)</span></label>
+          <label class="form-label">Thời gian * <span style="color:var(--text-dim)">(p:gg.mmm)</span></label>
           <input class="form-input" name="rec" placeholder="1:23.456" style="font-family:monospace;letter-spacing:0.05em" required pattern="\\d+:\\d{2}\\.\\d{3}"/>
         </div>
-        <div class="form-group"><label class="form-label">Pet <span style="color:var(--text-dim)">(TÃ¹y chá»n)</span></label>${mkCombobox('pet',pets.map(p=>({label:p.name,value:p.id})),'KhÃ´ng cÃ³ pet')}</div>
+        <div class="form-group"><label class="form-label">Pet <span style="color:var(--text-dim)">(Tùy chọn)</span></label>${mkCombobox('pet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet')}</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Quyá»n riÃªng tÆ°</label>
+        <label class="form-label">Quyền riêng tư</label>
         <select class="form-input" name="vis">
-          <option value="PUBLIC">&#127758; CÃ´ng khai â€” Má»i ngÆ°á»i Ä‘á»u cÃ³ thá»ƒ xem</option>
-          <option value="PRIVATE">&#128274; RiÃªng tÆ° â€” Chá»‰ tÃ´i vÃ  Quáº£n trá»‹ viÃªn</option>
+          <option value="PUBLIC">&#127758; Công khai — Mọi người đều có thể xem</option>
+          <option value="PRIVATE">&#128274; Riêng tư — Chỉ tôi và Quản trị viên</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">MÃ´ táº£ <span style="color:var(--text-dim)">(TÃ¹y chá»n)</span></label>
-        <textarea class="form-input" name="desc" placeholder="Báº¡n cÃ³ máº¹o cháº¡y, cáº¥u hÃ¬nh xe nÃ o muá»‘n chia sáº» khÃ´ng?"></textarea>
+        <label class="form-label">Mô tả <span style="color:var(--text-dim)">(Tùy chọn)</span></label>
+        <textarea class="form-input" name="desc" placeholder="Bạn có mẹo chạy, cấu hình xe nào muốn chia sẻ không?"></textarea>
       </div>
-      <button class="btn btn-primary" type="submit" id="ub" style="padding:12px">&#9650; Táº£i lÃªn Record</button>
+      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;" type="submit" id="ub" style="padding:12px">&#9650; Tải lên Record</button>
     </form>
     </div></div>
   </div>`;
   $('uf').onsubmit=async e=>{
     e.preventDefault();
     const mapId=$('cb-map')?.dataset.value, carId=$('cb-car')?.dataset.value;
-    if(!mapId||!carId){toast('Vui lÃ²ng chá»n Báº£n Ä‘á»“ vÃ  Xe','error');return;}
+    if(!mapId||!carId){toast('Vui lòng chọn Bản đồ và Xe','error');return;}
     const rec=e.target.rec.value;
-    if(!/^\d+:\d{2}\.\d{3}$/.test(rec)){toast('Äá»‹nh dáº¡ng thá»i gian pháº£i lÃ  p:gg.mmm (VD: 1:23.456)','error');return;}
-    const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Äang táº£i lÃªn...';
+    if(!/^\d+:\d{2}\.\d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg.mmm (VD: 1:23.456)','error');return;}
+    const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên...';
     try {
       await apiFetch('/videos',{method:'POST',body:JSON.stringify({
         video_url:e.target.vurl.value, map_id:mapId, car_id:carId,
         pet_id:$('cb-pet')?.dataset.value||null, record_ms:parseRecord(rec),
         description:e.target.desc.value, visibility:e.target.vis.value
       })});
-      toast('ÄÄƒng record thÃ nh cÃ´ng!'); navigate('/');
-    } catch(err){ toast(err.message,'error'); b.disabled=false; b.innerHTML='&#9650; Táº£i lÃªn Record'; }
+      toast('Đăng record thành công!'); navigate('/');
+    } catch(err){ toast(err.message,'error'); b.disabled=false; b.innerHTML='&#9650; Tải lên Record'; }
   };
 }
 
-// â”€â”€ BOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── BOARD ─────────────────────────────────────────────
 async function renderBoard() {
   $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:20px;">
     <div>
-      <h1 style="font-size:1.9rem;font-weight:900">&#127942; Báº£ng Xáº¿p Háº¡ng</h1>
-      <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">Xáº¿p háº¡ng ká»· lá»¥c theo Báº£n Ä‘á»“, SiÃªu xe vÃ  Pet.</p>
+      <h1 style="font-size:1.9rem;font-weight:900">&#127942; Bảng Xếp Hạng</h1>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">Xếp hạng kỷ lục theo Bản đồ, Siêu xe và Pet.</p>
     </div>
     <div class="skeleton" style="height:130px;border-radius:var(--radius-lg)"></div>
     <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr>
-      <th style="width:70px;text-align:center">Háº¡ng</th><th>Tay Ä‘ua</th><th>SiÃªu xe</th><th>Pet</th><th>Thá»i gian</th><th style="text-align:right">Xem</th>
+      <th style="width:70px;text-align:center">Hạng</th><th>Tay đua</th><th>Siêu xe</th><th>Pet</th><th>Thời gian</th><th style="text-align:right">Xem</th>
     </tr></thead><tbody id="board-body">${skRows(5)}</tbody></table></div>
   </div>`;
 
   const [maps,cars,pets]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets')]);
   $('app').querySelector('.skeleton').outerHTML=`<div class="filter-bar">
-    <h2>Lá»c Dá»¯ Liá»‡u</h2>
+    <h2>Lọc Dữ Liệu</h2>
     <div class="filter-grid">
-      <div class="form-group"><label class="form-label">Báº£n Ä‘á»“</label>${mkCombobox('bmap',maps.map(m=>({label:m.name,value:m.id})),'Táº¥t cáº£ báº£n Ä‘á»“')}</div>
-      <div class="form-group"><label class="form-label">SiÃªu xe</label>${mkCombobox('bcar',cars.map(c=>({label:c.name,value:c.id})),'Táº¥t cáº£ siÃªu xe')}</div>
-      <div class="form-group"><label class="form-label">Pet</label>${mkCombobox('bpet',pets.map(p=>({label:p.name,value:p.id})),'Táº¥t cáº£ pet')}</div>
+      <div class="form-group"><label class="form-label">Bản đồ</label>${mkCombobox('bmap',maps.map(m=>({label:m.name,value:m.id})),'Tất cả bản đồ')}</div>
+      <div class="form-group"><label class="form-label">Siêu xe</label>${mkCombobox('bcar',cars.map(c=>({label:c.name,value:c.id})),'Tất cả siêu xe')}</div>
+      <div class="form-group"><label class="form-label">Pet</label>${mkCombobox('bpet',pets.map(p=>({label:p.name,value:p.id})),'Tất cả pet')}</div>
     </div>
-    <button class="btn btn-purple btn-sm" style="margin-top:14px" onclick="loadBoard()">Ãp dá»¥ng</button>
-    <button class="btn btn-outline btn-sm" style="margin-top:14px" onclick="clearCB('bmap','Táº¥t cáº£ báº£n Ä‘á»“');clearCB('bcar','Táº¥t cáº£ siÃªu xe');clearCB('bpet','Táº¥t cáº£ pet');loadBoard()">KhÃ´i phá»¥c</button>
+    <button class="btn btn-purple btn-sm" style="margin-top:14px" onclick="loadBoard()">Áp dụng</button>
+    <button class="btn btn-outline btn-sm" style="margin-top:14px" onclick="clearCB('bmap','Tất cả bản đồ');clearCB('bcar','Tất cả siêu xe');clearCB('bpet','Tất cả pet');loadBoard()">Khôi phục</button>
   </div>`;
   loadBoard();
 }
@@ -888,19 +907,19 @@ async function loadBoard() {
   if(m) params.append('map_id',m); if(c) params.append('car_id',c); if(p) params.append('pet_id',p);
   try {
     const board=await apiFetch(`/record-board?${params}`);
-    if(!board.length){ body.innerHTML='<tr><td colspan="6"><div class="empty">ChÆ°a cÃ³ dá»¯ liá»‡u cho bá»™ lá»c nÃ y.</div></td></tr>'; return; }
+    if(!board.length){ body.innerHTML='<tr><td colspan="6"><div class="empty">Chưa có dữ liệu cho bộ lọc này.</div></td></tr>'; return; }
     body.innerHTML=board.map(e=>`<tr>
       <td style="text-align:center">${e.rank<=3?`<span class="rank-badge rank-${e.rank}">${e.rank}</span>`:`<span style="color:var(--text-dim);font-family:monospace;font-size:0.85rem">${e.rank}</span>`}</td>
       <td><div style="display:flex;align-items:center;gap:10px"><span class="avatar avatar-sm">${esc(e.player.username[0].toUpperCase())}</span><span style="font-weight:600">${esc(e.player.username)}</span></div></td>
       <td><span class="badge badge-blue">${esc(e.car.name)}</span></td>
-      <td>${e.pet?.name&&e.pet.name!=='None'?`<span class="badge badge-purple">${esc(e.pet.name)}</span>`:'<span style="color:var(--text-dim)">â€”</span>'}</td>
+      <td>${e.pet?.name&&e.pet.name!=='None'?`<span class="badge badge-purple">${esc(e.pet.name)}</span>`:'<span style="color:var(--text-dim)">—</span>'}</td>
       <td><span class="record-time" style="font-size:1.05rem">${fmtMs(e.record_ms)}</span></td>
       <td style="text-align:right"><a href="#/video/${e.video_id}" class="btn-icon" title="Watch">&#9654;</a></td>
     </tr>`).join('');
-  } catch { body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Táº£i báº£ng xáº¿p háº¡ng tháº¥t báº¡i.</td></tr>'; }
+  } catch { body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Tải bảng xếp hạng thất bại.</td></tr>'; }
 }
 
-// â”€â”€ VIDEO DETAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── VIDEO DETAIL ──────────────────────────────────────
 async function renderVideo(id) {
   $('app').innerHTML=`<div class="animate-in"><div class="skeleton" style="aspect-ratio:16/9;border-radius:20px;margin-bottom:24px"></div><div class="skeleton" style="height:180px;border-radius:12px"></div></div>`;
   try {
@@ -917,8 +936,8 @@ async function renderVideo(id) {
       }
     } catch {}
     if(!embed) embed=`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-dim)">
-      <div style="font-size:3rem">&#9654;</div><p>KhÃ´ng thá»ƒ nhÃºng video nÃ y trá»±c tiáº¿p.</p>
-      <a href="${esc(video.video_url)}" target="_blank" rel="noopener" style="color:var(--blue-hover)">Má»Ÿ liÃªn káº¿t &#8599;</a>
+      <div style="font-size:3rem">&#9654;</div><p>Không thể nhúng video này trực tiếp.</p>
+      <a href="${esc(video.video_url)}" target="_blank" rel="noopener" style="color:var(--blue-hover)">Mở liên kết &#8599;</a>
     </div>`;
 
     let related='';
@@ -926,7 +945,7 @@ async function renderVideo(id) {
       const rel=await apiFetch(`/videos?map_id=${video.map_id}&car_id=${video.car_id}&limit=6`);
       const fil=rel.filter(r=>r.id!==id);
       if(fil.length) related=`<div>
-        <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Ká»· Lá»¥c TÆ°Æ¡ng Tá»±</div>
+        <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Kỷ Lục Tương Tự</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           ${fil.map(r=>`<a href="#/video/${r.id}" class="card card-hover" style="display:flex;align-items:center;gap:12px;padding:10px 14px">
             <span class="record-time">${fmtMs(r.record_ms)}</span>
@@ -945,46 +964,46 @@ async function renderVideo(id) {
       <div class="detail-grid">
         <div style="display:flex;flex-direction:column;gap:18px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-            <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;line-height:1.2">${esc(video.map?.name)} â€” ${esc(video.car?.name)}</h1>
-            ${canDel?`<button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="confirmDelete('${video.id}','${esc(video.map?.name)} - ${esc(video.car?.name)}')">XÃ³a</button>`:''}
+            <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;line-height:1.2">${esc(video.map?.name)} — ${esc(video.car?.name)}</h1>
+            ${canDel?`<button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="confirmDelete('${video.id}','${esc(video.map?.name)} - ${esc(video.car?.name)}')">Xóa</button>`:''}
           </div>
           <div class="info-bar">
             <div style="display:flex;align-items:center;gap:10px">
               <span class="avatar avatar-md">${esc(video.user?.username[0].toUpperCase())}</span>
-              <div><div style="font-size:0.72rem;color:var(--text-dim)">NgÆ°á»i Ä‘Äƒng</div><div style="font-weight:700;font-size:0.9rem">${esc(video.user?.username)}</div></div>
+              <div><div style="font-size:0.72rem;color:var(--text-dim)">Người đăng</div><div style="font-weight:700;font-size:0.9rem">${esc(video.user?.username)}</div></div>
             </div>
             <div class="info-bar-sep"></div>
             <span class="info-stat">&#128197; ${dateStr(video.created_at)}</span>
-            <span class="info-stat">&#128065; ${video.views||0} lÆ°á»£t xem</span>
-            <span class="info-stat">&#128077; ${video.likes||0} lÆ°á»£t thÃ­ch</span>
+            <span class="info-stat">&#128065; ${video.views||0} lượt xem</span>
+            <span class="info-stat">&#128077; ${video.likes||0} lượt thích</span>
           </div>
           <div class="card"><div class="card-body">
-            <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">MÃ´ Táº£</div>
-            <p style="color:var(--text-muted);font-size:0.87rem;line-height:1.65;white-space:pre-wrap">${esc(video.description)||'KhÃ´ng cÃ³ mÃ´ táº£.'}</p>
+            <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Mô Tả</div>
+            <p style="color:var(--text-muted);font-size:0.87rem;line-height:1.65;white-space:pre-wrap">${esc(video.description)||'Không có mô tả.'}</p>
           </div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:18px;">
           <div class="stat-card">
             <div style="text-align:center;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:14px">
-              <div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Thá»i gian ká»· lá»¥c</div>
+              <div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Thời gian kỷ lục</div>
               <div class="record-time record-time-xl">${fmtMs(video.record_ms)}</div>
             </div>
-            <div class="stat-row"><span class="stat-label">&#128506; Báº£n Ä‘á»“</span><span class="badge badge-blue">${esc(video.map?.name)}</span></div>
-            <div class="stat-row"><span class="stat-label">&#128663; SiÃªu xe</span><span class="badge badge-orange">${esc(video.car?.name)}</span></div>
-            <div class="stat-row"><span class="stat-label">&#128062; Pet</span>${video.pet?.name&&video.pet.name!=='None'?`<span class="badge badge-purple">${esc(video.pet.name)}</span>`:'<span style="color:var(--text-dim);font-style:italic">KhÃ´ng dÃ¹ng</span>'}</div>
+            <div class="stat-row"><span class="stat-label">&#128506; Bản đồ</span><span class="badge badge-blue">${esc(video.map?.name)}</span></div>
+            <div class="stat-row"><span class="stat-label">&#128663; Siêu xe</span><span class="badge badge-orange">${esc(video.car?.name)}</span></div>
+            <div class="stat-row"><span class="stat-label">&#128062; Pet</span>${video.pet?.name&&video.pet.name!=='None'?`<span class="badge badge-purple">${esc(video.pet.name)}</span>`:'<span style="color:var(--text-dim);font-style:italic">Không dùng</span>'}</div>
             <div class="stat-row" style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
-              <span class="stat-label">&#128274; Quyá»n riÃªng tÆ°</span>
-              <span class="badge ${video.visibility==='PUBLIC'?'badge-green':'badge-orange'}">${video.visibility==='PUBLIC'?'CÃ”NG KHAI':'RIÃŠNG TÆ¯'}</span>
+              <span class="stat-label">&#128274; Quyền riêng tư</span>
+              <span class="badge ${video.visibility==='PUBLIC'?'badge-green':'badge-orange'}">${video.visibility==='PUBLIC'?'CÔNG KHAI':'RIÊNG TƯ'}</span>
             </div>
           </div>
           ${related}
         </div>
       </div>
     </div>`;
-  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">KhÃ´ng tÃ¬m tháº¥y video.</div>'; }
+  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy video.</div>'; }
 }
 
-// â”€â”€ PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PROFILE ───────────────────────────────────────────
 async function renderProfile(userId) {
   $('app').innerHTML=`<div class="animate-in"><div class="skeleton" style="height:130px;border-radius:var(--radius-lg);margin-bottom:24px"></div><div class="video-grid">${skCards(6)}</div></div>`;
   try {
@@ -996,68 +1015,68 @@ async function renderProfile(userId) {
         <span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>
         <div class="profile-info">
           <h2>${esc(user.username)}</h2>
-          <p>${currentUser?.id===userId?'Há»“ sÆ¡ cá»§a báº¡n':'Tay Ä‘ua cá»™ng Ä‘á»“ng'}</p>
+          <p>${currentUser?.id===userId?'Hồ sơ của bạn':'Tay đua cộng đồng'}</p>
           <div class="profile-stats">
-            <div class="profile-stat"><div class="val">${videos.length}</div><div class="lbl">Sá»‘ Record</div></div>
-            <div class="profile-stat"><div class="val">${videos.reduce((a,v)=>a+(v.views||0),0)}</div><div class="lbl">Tá»•ng lÆ°á»£t xem</div></div>
-            ${videos.length?`<div class="profile-stat"><div class="val record-time" style="font-size:1.4rem">${fmtMs(Math.min(...videos.map(v=>v.record_ms)))}</div><div class="lbl">ThÃ nh tÃ­ch tá»‘t nháº¥t</div></div>`:''}
+            <div class="profile-stat"><div class="val">${videos.length}</div><div class="lbl">Số Record</div></div>
+            <div class="profile-stat"><div class="val">${videos.reduce((a,v)=>a+(v.views||0),0)}</div><div class="lbl">Tổng lượt xem</div></div>
+            ${videos.length?`<div class="profile-stat"><div class="val record-time" style="font-size:1.4rem">${fmtMs(Math.min(...videos.map(v=>v.record_ms)))}</div><div class="lbl">Thành tích tốt nhất</div></div>`:''}
           </div>
         </div>
       </div>
-      <div class="section-header"><h2>Táº¥t Cáº£ Record</h2></div>
+      <div class="section-header"><h2>Tất Cả Record</h2></div>
       <div class="video-grid">
-        ${videos.length?videos.map(videoCard).join(''):'<div class="empty">NgÆ°á»i nÃ y chÆ°a táº£i lÃªn record nÃ o.</div>'}
+        ${videos.length?videos.map(videoCard).join(''):'<div class="empty">Người này chưa tải lên record nào.</div>'}
       </div>
     </div>`;
-  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">KhÃ´ng tÃ¬m tháº¥y há»“ sÆ¡ ngÆ°á»i dÃ¹ng.</div>'; }
+  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy hồ sơ người dùng.</div>'; }
 }
 
-// â”€â”€ ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── ADMIN ─────────────────────────────────────────────
 async function renderAdmin() {
-  if(!currentUser||currentUser.role!=='ADMIN'){ toast('Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p trang nÃ y!','error'); navigate('/'); return; }
+  if(!currentUser||currentUser.role!=='ADMIN'){ toast('Bạn không có quyền truy cập trang này!','error'); navigate('/'); return; }
   let tab='maps';
 
   async function renderTab() {
     const [maps,cars,pets]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets')]);
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:20px;">
-      <div><h1 style="font-size:1.7rem;font-weight:800">&#128736; Báº£ng Quáº£n Trá»‹</h1><p style="color:var(--text-muted);font-size:0.85rem">Quáº£n lÃ½ dá»¯ liá»‡u há»‡ thá»‘ng.</p></div>
+      <div><h1 style="font-size:1.7rem;font-weight:800">&#128736; Bảng Quản Trị</h1><p style="color:var(--text-muted);font-size:0.85rem">Quản lý dữ liệu hệ thống.</p></div>
       <div><div class="tabs">
-        <button class="tab-btn${tab==='maps'?' active':''}" onclick="adminTab('maps')">Báº£n Ä‘á»“ (${maps.length})</button>
-        <button class="tab-btn${tab==='cars'?' active':''}" onclick="adminTab('cars')">SiÃªu xe (${cars.length})</button>
+        <button class="tab-btn${tab==='maps'?' active':''}" onclick="adminTab('maps')">Bản đồ (${maps.length})</button>
+        <button class="tab-btn${tab==='cars'?' active':''}" onclick="adminTab('cars')">Siêu xe (${cars.length})</button>
         <button class="tab-btn${tab==='pets'?' active':''}" onclick="adminTab('pets')">Pets (${pets.length})</button>
       </div></div>
 
       ${tab==='maps'?`
         <div class="card"><div class="card-body">
-          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">ThÃªm Báº£n Ä‘á»“ má»›i</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Bản đồ mới</div>
           <div class="admin-add-form">
-            <div class="form-group"><label class="form-label">TÃªn báº£n Ä‘á»“ *</label><input class="form-input" id="mn" placeholder="TÃªn báº£n Ä‘á»“"/></div>
-            <button class="btn btn-primary btn-sm" onclick="adminAdd('map')">+ ThÃªm</button>
+            <div class="form-group"><label class="form-label">Tên bản đồ *</label><input class="form-input" id="mn" placeholder="Tên bản đồ"/></div>
+            <button class="btn btn-primary btn-sm" onclick="adminAdd('map')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>TÃªn</th><th>MÃ£ ID</th></tr></thead>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th></tr></thead>
         <tbody>${maps.map(m=>`<tr><td style="font-weight:600">${esc(m.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${m.id}</td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='cars'?`
         <div class="card"><div class="card-body">
-          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">ThÃªm SiÃªu xe má»›i</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Siêu xe mới</div>
           <div class="admin-add-form">
-            <div class="form-group"><label class="form-label">TÃªn xe *</label><input class="form-input" id="cn" placeholder="TÃªn xe"/></div>
-            <div class="form-group" style="max-width:90px"><label class="form-label">PhÃ¢n khÃºc</label><input class="form-input" id="cc" placeholder="S, A..."/></div>
-            <button class="btn btn-sm" style="background:var(--orange);color:#fff" onclick="adminAdd('car')">+ ThÃªm</button>
+            <div class="form-group"><label class="form-label">Tên xe *</label><input class="form-input" id="cn" placeholder="Tên xe"/></div>
+            <div class="form-group" style="max-width:90px"><label class="form-label">Phân khúc</label><input class="form-input" id="cc" placeholder="S, A..."/></div>
+            <button class="btn btn-sm" style="background:var(--orange);color:#fff" onclick="adminAdd('car')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>TÃªn</th><th>PhÃ¢n khÃºc</th><th>MÃ£ ID</th></tr></thead>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Phân khúc</th><th>Mã ID</th></tr></thead>
         <tbody>${cars.map(c=>`<tr><td style="font-weight:600">${esc(c.name)}</td><td><span class="badge badge-orange">${esc(c.car_class||'?')}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${c.id}</td></tr>`).join('')}</tbody>
         </table></div>`:
       `<div class="card"><div class="card-body">
-          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">ThÃªm Pet má»›i</div>
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Pet mới</div>
           <div class="admin-add-form">
-            <div class="form-group"><label class="form-label">TÃªn Pet *</label><input class="form-input" id="pn" placeholder="TÃªn Pet"/></div>
-            <button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="adminAdd('pet')">+ ThÃªm</button>
+            <div class="form-group"><label class="form-label">Tên Pet *</label><input class="form-input" id="pn" placeholder="Tên Pet"/></div>
+            <button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="adminAdd('pet')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>TÃªn</th><th>MÃ£ ID</th></tr></thead>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th></tr></thead>
         <tbody>${pets.map(p=>`<tr><td style="font-weight:600">${esc(p.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${p.id}</td></tr>`).join('')}</tbody>
         </table></div>`}
     </div>`;
@@ -1067,23 +1086,23 @@ async function renderAdmin() {
   window.adminAdd=async(type)=>{
     try {
       if(type==='map'){
-        const n=$('mn').value; if(!n){toast('Vui lÃ²ng nháº­p tÃªn','error');return;}
+        const n=$('mn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
         await apiFetch('/admin/maps',{method:'POST',body:JSON.stringify({name:n})});
       } else if(type==='car'){
-        const n=$('cn').value; if(!n){toast('Vui lÃ²ng nháº­p tÃªn','error');return;}
+        const n=$('cn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
         await apiFetch('/admin/cars',{method:'POST',body:JSON.stringify({name:n,car_class:$('cc').value||'A'})});
       } else {
-        const n=$('pn').value; if(!n){toast('Vui lÃ²ng nháº­p tÃªn','error');return;}
+        const n=$('pn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
         await apiFetch('/admin/pets',{method:'POST',body:JSON.stringify({name:n})});
       }
-      toast('ÄÃ£ thÃªm thÃ nh cÃ´ng!'); renderTab();
+      toast('Đã thêm thành công!'); renderTab();
     } catch(e){ toast(e.message,'error'); }
   };
 
   renderTab();
 }
 
-// â”€â”€â”€ ROUTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── ROUTER ──────────────────────────────────────────
 async function router() {
   const hash=window.location.hash.slice(1)||'/';
   const parts=hash.split('/').filter(Boolean);
@@ -1098,7 +1117,7 @@ async function router() {
   if(hash==='/admin') return renderAdmin();
   if(parts[0]==='video'&&parts[1]) return renderVideo(parts[1]);
   if(parts[0]==='profile'&&parts[1]) return renderProfile(parts[1]);
-  $('app').innerHTML='<div class="empty"><div class="empty-icon">&#128270;</div><p>KhÃ´ng tÃ¬m tháº¥y trang.</p><a href="#/" style="color:var(--purple-light);margin-top:8px;display:inline-block">Vá» trang chá»§ &rarr;</a></div>';
+  $('app').innerHTML='<div class="empty"><div class="empty-icon">&#128270;</div><p>Không tìm thấy trang.</p><a href="#/" style="color:var(--purple-light);margin-top:8px;display:inline-block">Về trang chủ &rarr;</a></div>';
 }
 
 window.addEventListener('hashchange', router);
@@ -1106,9 +1125,8 @@ window.doDelete=doDelete;
 window.loadBoard=loadBoard;
 window.confirmDelete=confirmDelete;
 
-// â”€â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── INIT ─────────────────────────────────────────────
 (async()=>{ await fetchUser(); renderNav(); router(); })();
 </script>
 </body>
 </html>
-
