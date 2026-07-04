@@ -416,22 +416,43 @@ async function renderUpload() {
     if(!mapId||!carId){toast('Vui lòng chọn Bản đồ và Xe','error');return;}
     const rec=e.target.rec.value;
     if(!/^\d+:\d{2}:\d{2}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:cc (VD: 1:23:45)','error');return;}
-    const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên...';
+    const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên (1/2)...';
     try {
-      const fd = new FormData();
-      fd.append('video_file', e.target.vfile.files[0]);
-      fd.append('map_id', mapId);
-      fd.append('car_id', carId);
-      if($('cb-pet')?.dataset.value) fd.append('pet_id', $('cb-pet').dataset.value);
-      fd.append('record_ms', parseRecord(rec));
-      fd.append('description', e.target.desc.value);
-      fd.append('visibility', e.target.vis.value);
+      // Bước 1: Upload trực tiếp lên Cloudinary
+      const cfd = new FormData();
+      cfd.append('file', e.target.vfile.files[0]);
+      cfd.append('upload_preset', 'zsm_preset');
+      
+      const cres = await fetch('https://api.cloudinary.com/v1_1/ip5cfp9y/video/upload', {
+        method: 'POST',
+        body: cfd
+      });
+      if(!cres.ok) {
+        const cerr = await cres.json();
+        throw new Error('Lỗi từ Cloudinary: ' + (cerr.error?.message || 'Không thể tải video'));
+      }
+      const cjson = await cres.json();
+      const videoUrl = cjson.secure_url;
+
+      // Bước 2: Bắn dữ liệu về Backend
+      b.innerHTML='<span class="spinner"></span> Đang lưu kỷ lục (2/2)...';
       const r = await fetch(`${API}/videos`, {
         method:'POST',
-        headers: {'Authorization': `Bearer ${getToken()}`},
-        body: fd
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          video_url: videoUrl,
+          map_id: mapId,
+          car_id: carId,
+          pet_id: $('cb-pet')?.dataset.value || null,
+          record_ms: parseRecord(rec),
+          description: e.target.desc.value,
+          visibility: e.target.vis.value
+        })
       });
-      if(!r.ok) throw new Error((await r.json()).detail||'Lỗi tải lên');
+      if(!r.ok) throw new Error((await r.json()).detail||'Lỗi tải lên máy chủ');
       toast('Đăng record thành công!'); navigate('/');
     } catch(err){ toast(err.message,'error'); b.disabled=false; b.innerHTML='&#9650; Tải lên Record'; }
   };
