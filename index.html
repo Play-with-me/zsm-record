@@ -596,9 +596,9 @@ function mkCombobox(id, opts, placeholder, val='') {
         <button type="button" class="combobox-clear" onclick="clearCB('${id}','${placeholder}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Bỏ chọn
         </button>
-        ${opts.map(o=>`<div class="combobox-item${o.value===val?' selected':''}" data-value="${o.value}" data-label="${esc(o.label)}" onclick="pickCB('${id}','${o.value}','${esc(o.label)}')" tabindex="0">
+        ${opts.map(o=>`<div class="combobox-item${o.value===val?' selected':''}" data-value="${o.value}" data-label="${esc(o.label.trim())}" onclick="pickCB('${id}','${o.value}','${esc(o.label.trim())}')" tabindex="0">
           <svg class="combobox-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-          ${esc(o.label)}</div>`).join('')}
+          ${esc(o.label.trim())}</div>`).join('')}
         ${!opts.length?'<div class="combobox-empty">Không có dữ liệu</div>':''}
       </div>
     </div>

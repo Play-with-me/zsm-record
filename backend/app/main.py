@@ -34,15 +34,15 @@ async def startup():
     
     try:
         import sys
-        # Add the parent directory to sys.path if not already there, so we can import seed_cars
+        # Add the parent directory to sys.path if not already there, so we can import fix_cars
         parent_dir = os.path.dirname(os.path.dirname(__file__))
         if parent_dir not in sys.path:
             sys.path.append(parent_dir)
-        import seed_cars
-        await seed_cars.seed_cars()
-        print("[OK] Chay seed_cars thanh cong.")
+        import fix_cars
+        await fix_cars.fix_cars()
+        print("[OK] Chay fix_cars thanh cong.")
     except Exception as e:
-        print(f"[WARN] Khong the chay seed_cars: {e}")
+        print(f"[WARN] Khong the chay fix_cars: {e}")
 
 @app.get("/")
 async def root():
