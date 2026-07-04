@@ -30,15 +30,19 @@ async def fix_cars():
                 
             if line.startswith("•\t") or line.startswith("• "):
                 line = line[2:].strip()
-                
-            if line.lower() == "xe a":
+
+            # Detect section headers (case-insensitive, strip trailing spaces)
+            line_lower = line.lower().strip()
+            if line_lower.startswith("xe a") and len(line_lower) <= 6:
                 current_class = "A"
                 continue
-            elif line.lower() == "xe t":
+            elif line_lower.startswith("xe t") and len(line_lower) <= 6:
                 current_class = "T"
                 continue
                 
-            name = line
+            name = line.strip()
+            if not name:
+                continue
             new_car = Car(name=name, car_class=current_class)
             db.add(new_car)
             added_count += 1
