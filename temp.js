@@ -381,8 +381,8 @@ async function renderUpload() {
     <div class="card"><div class="card-body-lg">
     <form id="uf" style="display:flex;flex-direction:column;gap:18px;">
     <div class="form-group">
-        <label class="form-label">Link Video * <span style="color:var(--text-dim)">(YouTube, Google Drive...)</span></label>
-        <input class="form-input" type="url" name="vurl" placeholder="https://www.youtube.com/watch?v=..." required />
+        <label class="form-label">Video File *</label>
+        <input class="form-input" type="file" name="vfile" accept="video/mp4,video/webm" required />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group"><label class="form-label">Bản đồ *</label>${mkCombobox('map',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...')}</div>
@@ -418,11 +418,20 @@ async function renderUpload() {
     if(!/^\d+:\d{2}:\d{2}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:cc (VD: 1:23:45)','error');return;}
     const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên...';
     try {
-      await apiFetch('/videos',{method:'POST',body:JSON.stringify({
-        video_url:e.target.vurl.value, map_id:mapId, car_id:carId,
-        pet_id:$('cb-pet')?.dataset.value||null, record_ms:parseRecord(rec),
-        description:e.target.desc.value, visibility:e.target.vis.value
-      })});
+      const fd = new FormData();
+      fd.append('video_file', e.target.vfile.files[0]);
+      fd.append('map_id', mapId);
+      fd.append('car_id', carId);
+      if($('cb-pet')?.dataset.value) fd.append('pet_id', $('cb-pet').dataset.value);
+      fd.append('record_ms', parseRecord(rec));
+      fd.append('description', e.target.desc.value);
+      fd.append('visibility', e.target.vis.value);
+      const r = await fetch(`${API}/videos`, {
+        method:'POST',
+        headers: {'Authorization': `Bearer ${getToken()}`},
+        body: fd
+      });
+      if(!r.ok) throw new Error((await r.json()).detail||'Lỗi tải lên');
       toast('Đăng record thành công!'); navigate('/');
     } catch(err){ toast(err.message,'error'); b.disabled=false; b.innerHTML='&#9650; Tải lên Record'; }
   };
