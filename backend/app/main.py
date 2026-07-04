@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .database import engine, Base
-from .routers import auth, videos, masters, board
+from .routers import auth, videos, masters, board, users
 
 app = FastAPI(title="ZSM Record API")
 
@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
 app.include_router(videos.router, prefix="/api/v1")
 app.include_router(masters.router, prefix="/api/v1")
 app.include_router(board.router, prefix="/api/v1")

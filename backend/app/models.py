@@ -26,6 +26,8 @@ class User(Base):
     avatar = Column(String, nullable=True)
     role = Column(Enum(RoleEnum), default=RoleEnum.USER, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_username_update = Column(DateTime, nullable=True)
+    last_avatar_update = Column(DateTime, nullable=True)
 
     videos = relationship("Video", back_populates="user")
 

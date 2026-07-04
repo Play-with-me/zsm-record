@@ -16,8 +16,13 @@ class UserResponse(UserBase):
     id: str
     role: RoleEnum
     created_at: datetime
+    last_username_update: Optional[datetime] = None
+    last_avatar_update: Optional[datetime] = None
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    username: str
 
 # ----------------- Auth -----------------
 class Token(BaseModel):

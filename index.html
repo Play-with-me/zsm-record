@@ -538,7 +538,10 @@ function renderNav() {
       <a href="#/upload" class="btn btn-purple btn-sm">+ Đăng Record</a>
       <div class="user-menu" id="user-menu">
         <button class="user-trigger" onclick="toggleUserMenu()">
-          <span class="avatar avatar-sm">${esc(currentUser.username[0].toUpperCase())}</span>
+          ${currentUser.avatar 
+            ? `<img src="${esc(currentUser.avatar)}" class="avatar avatar-sm" style="object-fit:cover;"/>` 
+            : `<span class="avatar avatar-sm">${esc(currentUser.username[0].toUpperCase())}</span>`
+          }
           <span class="uname">${esc(currentUser.username)}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
@@ -1004,18 +1007,85 @@ async function renderVideo(id) {
 }
 
 // ── PROFILE ───────────────────────────────────────────
+window.editProfile = async function(field) {
+  if (field === 'avatar') {
+    const file = document.createElement('input');
+    file.type = 'file'; file.accept = 'image/*';
+    file.onchange = async e => {
+      const f = e.target.files[0];
+      if(!f) return;
+      const b = $('avatar-edit-btn');
+      b.innerHTML = '<span class="spinner" style="width:12px;height:12px"></span>';
+      const fd = new FormData(); fd.append('avatar_file', f);
+      try {
+        const r = await fetch(`${API}/users/me/avatar`, {
+          method: 'POST',
+          headers: {'Authorization': `Bearer ${getToken()}`},
+          body: fd
+        });
+        if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi cập nhật avatar');
+        toast('Cập nhật Avatar thành công!');
+        await fetchUser(); renderProfile(currentUser.id); renderNav();
+      } catch(err) { toast(err.message, 'error'); b.innerHTML = 'Đổi ảnh'; }
+    };
+    file.click();
+  } else if (field === 'username') {
+    const newName = prompt('Nhập tên người dùng mới (Tối thiểu 3 ký tự):', currentUser.username);
+    if (!newName || newName === currentUser.username) return;
+    try {
+      const r = await fetch(`${API}/users/me/username`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}`},
+        body: JSON.stringify({username: newName})
+      });
+      if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi cập nhật tên');
+      toast('Cập nhật tên thành công!');
+      await fetchUser(); renderProfile(currentUser.id); renderNav();
+    } catch(err) { toast(err.message, 'error'); }
+  }
+};
+
 async function renderProfile(userId) {
   $('app').innerHTML=`<div class="animate-in"><div class="skeleton" style="height:130px;border-radius:var(--radius-lg);margin-bottom:24px"></div><div class="video-grid">${skCards(6)}</div></div>`;
   try {
-    const videos=await apiFetch(`/videos?user_id=${userId}&limit=50`);
-    const user=videos[0]?.user||{username:'Unknown',id:userId};
-    const totalMs=videos.reduce((a,v)=>a+(v.record_ms||0),0);
+    const [videos, user] = await Promise.all([
+      apiFetch(`/videos?user_id=${userId}&limit=50`),
+      apiFetch(`/users/${userId}`)
+    ]);
+    const totalMs = videos.reduce((a,v) => a+(v.record_ms||0), 0);
+    const isOwner = currentUser?.id === userId;
+    
+    // Calculate cooldowns
+    let avatarWait = '', nameWait = '';
+    if (isOwner) {
+      const now = new Date();
+      if (currentUser.last_avatar_update) {
+        const d = new Date(currentUser.last_avatar_update + 'Z');
+        const diff = now - d;
+        if (diff < 86400000) avatarWait = `(Chờ ${Math.ceil((86400000-diff)/3600000)}h)`;
+      }
+      if (currentUser.last_username_update) {
+        const d = new Date(currentUser.last_username_update + 'Z');
+        const diff = now - d;
+        if (diff < 7*86400000) nameWait = `(Chờ ${Math.ceil((7*86400000-diff)/86400000)} ngày)`;
+      }
+    }
+
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
       <div class="profile-header">
-        <span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>
+        <div style="position:relative; display:inline-block;">
+          ${user.avatar 
+            ? `<img src="${esc(user.avatar)}" class="avatar avatar-lg" style="object-fit:cover; border:2px solid var(--border);" />` 
+            : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
+          }
+          ${isOwner ? `<button id="avatar-edit-btn" onclick="editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
+        </div>
         <div class="profile-info">
-          <h2>${esc(user.username)}</h2>
-          <p>${currentUser?.id===userId?'Hồ sơ của bạn':'Tay đua cộng đồng'}</p>
+          <h2 style="display:flex;align-items:center;gap:10px;">
+            ${esc(user.username)}
+            ${isOwner ? `<button onclick="editProfile('username')" class="btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" title="Đổi tên ${nameWait}">&#9998;</button>` : ''}
+          </h2>
+          <p>${isOwner ? 'Hồ sơ của bạn' : 'Tay đua cộng đồng'}</p>
           <div class="profile-stats">
             <div class="profile-stat"><div class="val">${videos.length}</div><div class="lbl">Số Record</div></div>
             <div class="profile-stat"><div class="val">${videos.reduce((a,v)=>a+(v.views||0),0)}</div><div class="lbl">Tổng lượt xem</div></div>
@@ -1023,12 +1093,12 @@ async function renderProfile(userId) {
           </div>
         </div>
       </div>
-      <div class="section-header"><h2>Tất Cả Record</h2></div>
+      <div class="section-header" style="margin-top:20px;"><h2>Tất Cả Record</h2></div>
       <div class="video-grid">
-        ${videos.length?videos.map(videoCard).join(''):'<div class="empty">Người này chưa tải lên record nào.</div>'}
+        ${videos.length ? videos.map(videoCard).join('') : '<div class="empty">Người này chưa tải lên record nào.</div>'}
       </div>
     </div>`;
-  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy hồ sơ người dùng.</div>'; }
+  } catch(e) { console.error(e); $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy hồ sơ người dùng.</div>'; }
 }
 
 // ── ADMIN ─────────────────────────────────────────────
