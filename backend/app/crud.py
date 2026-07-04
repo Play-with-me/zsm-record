@@ -72,22 +72,33 @@ async def create_pet(db: AsyncSession, pet_in: schemas.PetCreate):
     await db.refresh(db_pet)
     return db_pet
 
-# --- Videos ---
+from sqlalchemy.orm import selectinload
+
 async def create_video(db: AsyncSession, video: schemas.VideoCreate, user_id: str):
     db_video = models.Video(**video.model_dump(), user_id=user_id)
     db.add(db_video)
     await db.commit()
-    await db.refresh(db_video)
     
     # Eager load relationships for response
     result = await db.execute(
         select(models.Video)
+        .options(
+            selectinload(models.Video.user),
+            selectinload(models.Video.map),
+            selectinload(models.Video.car),
+            selectinload(models.Video.pet)
+        )
         .filter(models.Video.id == db_video.id)
     )
     return result.scalars().first()
 
 async def get_videos(db: AsyncSession, skip: int = 0, limit: int = 20, map_id: str = None, car_id: str = None, user_id: str = None):
-    query = select(models.Video).order_by(desc(models.Video.created_at))
+    query = select(models.Video).options(
+        selectinload(models.Video.user),
+        selectinload(models.Video.map),
+        selectinload(models.Video.car),
+        selectinload(models.Video.pet)
+    ).order_by(desc(models.Video.created_at))
     if map_id:
         query = query.filter(models.Video.map_id == map_id)
     if car_id:
@@ -100,11 +111,23 @@ async def get_videos(db: AsyncSession, skip: int = 0, limit: int = 20, map_id: s
     return result.scalars().all()
 
 async def get_video(db: AsyncSession, video_id: str):
-    result = await db.execute(select(models.Video).filter(models.Video.id == video_id))
+    result = await db.execute(
+        select(models.Video).options(
+            selectinload(models.Video.user),
+            selectinload(models.Video.map),
+            selectinload(models.Video.car),
+            selectinload(models.Video.pet)
+        ).filter(models.Video.id == video_id)
+    )
     return result.scalars().first()
 
 async def get_record_board(db: AsyncSession, map_id: str = None, car_id: str = None, pet_id: str = None):
-    query = select(models.Video).filter(models.Video.visibility == models.VisibilityEnum.PUBLIC)
+    query = select(models.Video).options(
+        selectinload(models.Video.user),
+        selectinload(models.Video.map),
+        selectinload(models.Video.car),
+        selectinload(models.Video.pet)
+    ).filter(models.Video.visibility == models.VisibilityEnum.PUBLIC)
     
     if map_id:
         query = query.filter(models.Video.map_id == map_id)
