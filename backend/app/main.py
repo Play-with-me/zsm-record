@@ -31,6 +31,14 @@ app.include_router(board.router, prefix="/api/v1")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    try:
+        import sys
+        sys.path.append(os.path.dirname(__file__))
+        from ..seed_cars import seed_cars
+        await seed_cars()
+    except Exception as e:
+        print(f"[WARN] Khong the chay seed_cars: {e}")
 
 @app.get("/")
 async def root():
