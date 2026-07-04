@@ -1,0 +1,108 @@
+from pydantic import BaseModel, EmailStr, Field
+from datetime import datetime
+from typing import Optional, List
+from .models import RoleEnum, VisibilityEnum
+
+# ----------------- Users -----------------
+class UserBase(BaseModel):
+    username: str
+    email: EmailStr
+    avatar: Optional[str] = None
+
+class UserCreate(UserBase):
+    password: str
+
+class UserResponse(UserBase):
+    id: str
+    role: RoleEnum
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+# ----------------- Auth -----------------
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+# ----------------- Map -----------------
+class MapBase(BaseModel):
+    name: str
+    image: Optional[str] = None
+
+class MapCreate(MapBase):
+    pass
+
+class MapResponse(MapBase):
+    id: str
+    class Config:
+        from_attributes = True
+
+# ----------------- Car -----------------
+class CarBase(BaseModel):
+    name: str
+    car_class: str
+    image: Optional[str] = None
+
+class CarCreate(CarBase):
+    pass
+
+class CarResponse(CarBase):
+    id: str
+    class Config:
+        from_attributes = True
+
+# ----------------- Pet -----------------
+class PetBase(BaseModel):
+    name: str
+    image: Optional[str] = None
+
+class PetCreate(PetBase):
+    pass
+
+class PetResponse(PetBase):
+    id: str
+    class Config:
+        from_attributes = True
+
+# ----------------- Video -----------------
+class VideoBase(BaseModel):
+    map_id: str
+    car_id: str
+    pet_id: Optional[str] = None
+    record_ms: int = Field(gt=0)
+    video_url: str
+    thumbnail: Optional[str] = None
+    description: Optional[str] = None
+    visibility: VisibilityEnum = VisibilityEnum.PUBLIC
+
+class VideoCreate(VideoBase):
+    pass
+
+class VideoResponse(VideoBase):
+    id: str
+    user_id: str
+    views: int
+    likes: int
+    created_at: datetime
+    
+    user: UserResponse
+    map: MapResponse
+    car: CarResponse
+    pet: Optional[PetResponse]
+    class Config:
+        from_attributes = True
+
+# ----------------- Record Board -----------------
+class RecordBoardEntry(BaseModel):
+    rank: int
+    player: UserResponse
+    car: CarResponse
+    pet: Optional[PetResponse]
+    record_ms: int
+    video_id: str
+    video_url: str
+    class Config:
+        from_attributes = True
