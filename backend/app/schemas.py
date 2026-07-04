@@ -24,6 +24,10 @@ class UserResponse(UserBase):
 class UserUpdate(BaseModel):
     username: str
 
+class UserAdminUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+
 # ----------------- Auth -----------------
 class Token(BaseModel):
     access_token: str
@@ -86,6 +90,14 @@ class VideoBase(BaseModel):
 
 class VideoCreate(VideoBase):
     pass
+
+class VideoUpdate(BaseModel):
+    map_id: Optional[str] = None
+    car_id: Optional[str] = None
+    pet_id: Optional[str] = None
+    record_ms: Optional[int] = Field(None, gt=0)
+    description: Optional[str] = None
+    visibility: Optional[VisibilityEnum] = None
 
 class VideoResponse(VideoBase):
     id: str

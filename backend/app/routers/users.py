@@ -19,6 +19,31 @@ async def get_all_users(
     result = await db.execute(select(models.User).order_by(models.User.created_at.desc()))
     return result.scalars().all()
 
+@router.put("/{user_id}/admin", response_model=schemas.UserResponse)
+async def admin_update_user(
+    user_id: str,
+    user_update: schemas.UserAdminUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_admin: models.User = Depends(get_current_admin)
+) -> Any:
+    from sqlalchemy.future import select
+    result = await db.execute(select(models.User).filter(models.User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng.")
+    
+    update_data = user_update.model_dump(exclude_none=True)
+    for key, value in update_data.items():
+        setattr(user, key, value)
+    
+    try:
+        await db.commit()
+        await db.refresh(user)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Tên hoặc email đã tồn tại.")
+    
+    return user
 
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 async def get_user_profile(user_id: str, db: AsyncSession = Depends(get_db)) -> Any:

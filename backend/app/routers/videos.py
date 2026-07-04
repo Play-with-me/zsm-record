@@ -82,6 +82,27 @@ async def read_video(video_id: str, db: AsyncSession = Depends(get_db)):
     await db.refresh(db_video)
     return db_video
 
+@router.put("/{video_id}", response_model=schemas.VideoResponse)
+async def update_video(
+    video_id: str,
+    video_update: schemas.VideoUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_video = await crud.get_video(db, video_id=video_id)
+    if db_video is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    if db_video.user_id != current_user.id and current_user.role.value != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    update_data = video_update.model_dump(exclude_none=True)
+    for key, value in update_data.items():
+        setattr(db_video, key, value)
+    
+    await db.commit()
+    await db.refresh(db_video)
+    return db_video
+
 @router.delete("/{video_id}")
 async def delete_video(
     video_id: str,
