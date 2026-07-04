@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, text
 from .database import engine, Base, AsyncSessionLocal
-from .models import Car, Pet
+from .models import Car, Pet, Map
 from .routers import auth, videos, masters, board, users
 
 app = FastAPI(title="ZSM Record API")
@@ -102,12 +102,59 @@ async def reseed_pets():
         await session.commit()
     print(f"[OK] Reseed pets: da them {len(pets_to_add)} pet.")
 
+async def reseed_maps():
+    """Wipe and re-seed maps table from maps_list.txt."""
+    maps_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'maps_list.txt')
+    if not os.path.exists(maps_file):
+        print("[WARN] Khong tim thay maps_list.txt, bo qua reseed.")
+        return
+
+    with open(maps_file, 'r', encoding='utf-8-sig') as f:
+        lines = f.readlines()
+
+    current_difficulty = 1
+    maps_to_add = []
+    seen = set()
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        
+        # Check for difficulty headers (e.g. "1 sao:", "2 sao:")
+        if line.lower().endswith("sao:"):
+            try:
+                current_difficulty = int(line.split()[0])
+            except:
+                pass
+            continue
+
+        # Strip bullet characters
+        if line.startswith('\u2022') or line.startswith('\u00b7'):
+            line = line[1:].strip()
+        name = line.strip()
+        
+        if name and name not in seen:
+            maps_to_add.append((name, current_difficulty))
+            seen.add(name)
+
+    async with AsyncSessionLocal() as session:
+        from .models import Map
+        # Delete ALL maps first
+        await session.execute(delete(Map))
+        # Re-add from file
+        for name, diff in maps_to_add:
+            session.add(Map(name=name, difficulty=diff))
+        await session.commit()
+    print(f"[OK] Reseed maps: da them {len(maps_to_add)} map voi do kho (sao).")
+
+
 
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     try:
+        await reseed_maps()
         await reseed_cars()
         await reseed_pets()
     except Exception as e:

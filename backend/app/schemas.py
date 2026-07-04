@@ -35,6 +35,7 @@ class TokenData(BaseModel):
 # ----------------- Map -----------------
 class MapBase(BaseModel):
     name: str
+    difficulty: int = 1
     image: Optional[str] = None
 
 class MapCreate(MapBase):

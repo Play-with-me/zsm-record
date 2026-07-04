@@ -36,6 +36,7 @@ class Map(Base):
 
     id = Column(String, primary_key=True, index=True, default=generate_uuid)
     name = Column(String, unique=True, index=True, nullable=False)
+    difficulty = Column(Integer, nullable=False, default=1)
     image = Column(String, nullable=True)
 
     videos = relationship("Video", back_populates="map")

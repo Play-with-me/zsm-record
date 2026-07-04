@@ -1141,13 +1141,14 @@ async function renderAdmin() {
   let tab='maps';
 
   async function renderTab() {
-    const [maps,cars,pets]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets')]);
+    const [maps,cars,pets,users]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets'),apiFetch('/users')]);
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:20px;">
       <div><h1 style="font-size:1.7rem;font-weight:800">&#128736; Bảng Quản Trị</h1><p style="color:var(--text-muted);font-size:0.85rem">Quản lý dữ liệu hệ thống.</p></div>
       <div><div class="tabs">
         <button class="tab-btn${tab==='maps'?' active':''}" onclick="adminTab('maps')">Bản đồ (${maps.length})</button>
         <button class="tab-btn${tab==='cars'?' active':''}" onclick="adminTab('cars')">Siêu xe (${cars.length})</button>
         <button class="tab-btn${tab==='pets'?' active':''}" onclick="adminTab('pets')">Pets (${pets.length})</button>
+        <button class="tab-btn${tab==='users'?' active':''}" onclick="adminTab('users')">Tài khoản (${users.length})</button>
       </div></div>
 
       ${tab==='maps'?`
@@ -1155,11 +1156,12 @@ async function renderAdmin() {
           <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Bản đồ mới</div>
           <div class="admin-add-form">
             <div class="form-group"><label class="form-label">Tên bản đồ *</label><input class="form-input" id="mn" placeholder="Tên bản đồ"/></div>
+            <div class="form-group" style="max-width:90px"><label class="form-label">Độ khó (sao)</label><input class="form-input" id="md" type="number" min="1" max="10" value="1"/></div>
             <button class="btn btn-primary btn-sm" onclick="adminAdd('map')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th></tr></thead>
-        <tbody>${maps.map(m=>`<tr><td style="font-weight:600">${esc(m.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${m.id}</td></tr>`).join('')}</tbody>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Độ khó</th><th>Mã ID</th></tr></thead>
+        <tbody>${maps.map(m=>`<tr><td style="font-weight:600">${esc(m.name)}</td><td><span style="color:var(--yellow)">${'★'.repeat(m.difficulty||1)}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${m.id}</td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='cars'?`
         <div class="card"><div class="card-body">
@@ -1182,7 +1184,17 @@ async function renderAdmin() {
         </div></div>
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th></tr></thead>
         <tbody>${pets.map(p=>`<tr><td style="font-weight:600">${esc(p.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${p.id}</td></tr>`).join('')}</tbody>
-        </table></div>`}
+        </table></div>`:
+      tab==='users'?`
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Mã ID</th></tr></thead>
+        <tbody>${users.map(u=>`<tr>
+          <td>${u.avatar?`<img src="${esc(u.avatar)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>`:`<div class="avatar avatar-sm">${esc(u.username[0].toUpperCase())}</div>`}</td>
+          <td style="font-weight:600">${esc(u.username)}</td>
+          <td style="color:var(--text-dim)">${esc(u.email)}</td>
+          <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
+          <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
+        </tr>`).join('')}</tbody>
+        </table></div>`:''}
     </div>`;
   }
 
@@ -1191,7 +1203,7 @@ async function renderAdmin() {
     try {
       if(type==='map'){
         const n=$('mn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
-        await apiFetch('/admin/maps',{method:'POST',body:JSON.stringify({name:n})});
+        await apiFetch('/admin/maps',{method:'POST',body:JSON.stringify({name:n, difficulty: parseInt($('md').value||1)})});
       } else if(type==='car'){
         const n=$('cn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
         await apiFetch('/admin/cars',{method:'POST',body:JSON.stringify({name:n,car_class:$('cc').value||'A'})});

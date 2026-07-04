@@ -5,10 +5,20 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
 
-from .auth import get_current_user, get_db
+from .auth import get_current_user, get_db, get_current_admin
 from .. import schemas, models
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+@router.get("/", response_model=list[schemas.UserResponse])
+async def get_all_users(
+    db: AsyncSession = Depends(get_db),
+    current_admin: models.User = Depends(get_current_admin)
+) -> Any:
+    from sqlalchemy.future import select
+    result = await db.execute(select(models.User).order_by(models.User.created_at.desc()))
+    return result.scalars().all()
+
 
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 async def get_user_profile(user_id: str, db: AsyncSession = Depends(get_db)) -> Any:
