@@ -2,7 +2,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from .database import engine, Base
+from sqlalchemy import delete, text
+from .database import engine, Base, AsyncSessionLocal
+from .models import Car
 from .routers import auth, videos, masters, board, users
 
 app = FastAPI(title="ZSM Record API")
@@ -27,22 +29,54 @@ app.include_router(videos.router, prefix="/api/v1")
 app.include_router(masters.router, prefix="/api/v1")
 app.include_router(board.router, prefix="/api/v1")
 
+async def reseed_cars():
+    """Wipe and re-seed cars table from cars_list.txt."""
+    cars_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cars_list.txt')
+    if not os.path.exists(cars_file):
+        print("[WARN] Khong tim thay cars_list.txt, bo qua reseed.")
+        return
+
+    with open(cars_file, 'r', encoding='utf-8-sig') as f:
+        lines = f.readlines()
+
+    current_class = "A"
+    cars_to_add = []
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        # Strip bullet characters
+        if line.startswith('\u2022') or line.startswith('\u00b7'):
+            line = line[1:].strip()
+        line_lower = line.lower()
+        # Detect category headers - skip them, just switch class
+        if line_lower.startswith("xe a") and len(line_lower) <= 6:
+            current_class = "A"
+            continue
+        elif line_lower.startswith("xe t") and len(line_lower) <= 6:
+            current_class = "T"
+            continue
+        name = line.strip()
+        if name:
+            cars_to_add.append((name, current_class))
+
+    async with AsyncSessionLocal() as session:
+        # Delete ALL cars first
+        await session.execute(delete(Car))
+        # Re-add from file
+        for name, car_class in cars_to_add:
+            session.add(Car(name=name, car_class=car_class))
+        await session.commit()
+    print(f"[OK] Reseed cars: da them {len(cars_to_add)} xe (A/T phan loai chinh xac).")
+
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
     try:
-        import sys
-        # Add the parent directory to sys.path if not already there, so we can import fix_cars
-        parent_dir = os.path.dirname(os.path.dirname(__file__))
-        if parent_dir not in sys.path:
-            sys.path.append(parent_dir)
-        import fix_cars
-        await fix_cars.fix_cars()
-        print("[OK] Chay fix_cars thanh cong.")
+        await reseed_cars()
     except Exception as e:
-        print(f"[WARN] Khong the chay fix_cars: {e}")
+        print(f"[WARN] reseed_cars gap loi: {e}")
 
 @app.get("/")
 async def root():

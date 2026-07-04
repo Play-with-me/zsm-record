@@ -234,6 +234,12 @@
       border-bottom:1px solid var(--border); margin-bottom:2px;
     }
     .combobox-clear:hover { color:var(--red); background:rgba(248,113,113,0.06); }
+    .combobox-group-header {
+      padding:4px 11px 2px;
+      font-size:0.7rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+      color:var(--text-dim); background:rgba(255,255,255,0.03);
+      border-bottom:1px solid var(--border); margin-top:4px;
+    }
 
     /* TABLE */
     .data-table { width:100%; border-collapse:collapse; }
@@ -582,8 +588,22 @@ function logout() { clearToken(); currentUser=null; renderNav(); toast('Đã đ�
 function navigate(p) { window.location.hash=p; }
 
 // ─── COMBOBOX ─────────────────────────────────────────
+// opts = [{label, value, group?}] — group is optional, used for car class grouping
 function mkCombobox(id, opts, placeholder, val='') {
   const sel=opts.find(o=>o.value===val);
+  // Build items with optional group headers
+  let itemsHtml = '';
+  let lastGroup = null;
+  for (const o of opts) {
+    const g = o.group || null;
+    if (g && g !== lastGroup) {
+      itemsHtml += `<div class="combobox-group-header">${esc(g)}</div>`;
+      lastGroup = g;
+    }
+    itemsHtml += `<div class="combobox-item${o.value===val?' selected':''}" data-value="${o.value}" data-label="${esc(o.label.trim())}" data-group="${esc(g||'')}" onclick="pickCB('${id}','${o.value}','${esc(o.label.trim())}')" tabindex="0">
+      <svg class="combobox-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+      ${esc(o.label.trim())}</div>`;
+  }
   return `<div class="combobox" id="cb-${id}">
     <button type="button" class="combobox-trigger${val?' ':''}${val?'':'placeholder'}"
       onclick="openCB('${id}')" id="cbt-${id}">
@@ -596,14 +616,13 @@ function mkCombobox(id, opts, placeholder, val='') {
         <button type="button" class="combobox-clear" onclick="clearCB('${id}','${placeholder}')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Bỏ chọn
         </button>
-        ${opts.map(o=>`<div class="combobox-item${o.value===val?' selected':''}" data-value="${o.value}" data-label="${esc(o.label.trim())}" onclick="pickCB('${id}','${o.value}','${esc(o.label.trim())}')" tabindex="0">
-          <svg class="combobox-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-          ${esc(o.label.trim())}</div>`).join('')}
+        ${itemsHtml}
         ${!opts.length?'<div class="combobox-empty">Không có dữ liệu</div>':''}
       </div>
     </div>
   </div>`;
 }
+
 function openCB(id) {
   document.querySelectorAll('.combobox-dropdown').forEach(d=>{if(d.id!==`cbd-${id}`)d.style.display='none';});
   const dd=$(`cbd-${id}`); const isOpen=dd.style.display!=='none';
@@ -612,8 +631,23 @@ function openCB(id) {
   if(!isOpen) { const inp=dd.querySelector('input'); inp?.focus(); inp&&(inp.value=''); filterCB(id,''); }
 }
 function filterCB(id,q) {
-  document.querySelectorAll(`#cbl-${id} .combobox-item`).forEach(i=>{
-    i.style.display=i.dataset.label.toLowerCase().includes(q.toLowerCase())?'':'none';
+  const list = document.getElementById(`cbl-${id}`);
+  if (!list) return;
+  const items = list.querySelectorAll('.combobox-item');
+  const headers = list.querySelectorAll('.combobox-group-header');
+  const lq = q.toLowerCase();
+  items.forEach(i => {
+    i.style.display = i.dataset.label.toLowerCase().includes(lq) ? '' : 'none';
+  });
+  // Hide group headers if all items in that group are hidden
+  headers.forEach(h => {
+    let next = h.nextElementSibling;
+    let hasVisible = false;
+    while (next && !next.classList.contains('combobox-group-header')) {
+      if (next.classList.contains('combobox-item') && next.style.display !== 'none') hasVisible = true;
+      next = next.nextElementSibling;
+    }
+    h.style.display = hasVisible ? '' : 'none';
   });
 }
 function pickCB(id,val,label) {
@@ -833,7 +867,7 @@ async function renderUpload() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group"><label class="form-label">Bản đồ *</label>${mkCombobox('map',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...')}</div>
-        <div class="form-group"><label class="form-label">Siêu xe *</label>${mkCombobox('car',cars.map(c=>({label:c.name,value:c.id})),'Chọn siêu xe...')}</div>
+        <div class="form-group"><label class="form-label">Siêu xe *</label>${mkCombobox('car',cars.map(c=>({label:c.name,value:c.id,group:c.car_class==='T'?'⚡ Xe T (Siêu Xe)':'🏎️ Xe A (Xe Thường)'})),'Chọn siêu xe...')}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
