@@ -12,16 +12,13 @@ const $ = id => document.getElementById(id);
 const esc = str => { if(!str) return ''; const d=document.createElement('div'); d.textContent=str; return d.innerHTML; };
 
 function fmtMs(ms) {
-  const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000), mi=ms%1000;
-  return `${m}:${String(s).padStart(2,'0')}:${String(mi).padStart(3,'0')}`;
+  const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000), cs=Math.floor((ms%1000)/10);
+  return `${m}:${String(s).padStart(2,'0')}:${String(cs).padStart(2,'0')}`;
 }
 function parseRecord(str) {
   const parts = str.split(':');
   if(parts.length === 3) {
-    return parseInt(parts[0])*60000 + parseInt(parts[1])*1000 + parseInt(parts[2].padEnd(3,'0'));
-  } else if (parts.length === 2 && parts[1].includes('.')) {
-    const [s,mi]=parts[1].split('.');
-    return parseInt(parts[0])*60000 + parseInt(s)*1000 + parseInt(mi.padEnd(3,'0'));
+    return parseInt(parts[0])*60000 + parseInt(parts[1])*1000 + parseInt(parts[2])*10;
   }
   return 0;
 }
@@ -383,9 +380,9 @@ async function renderUpload() {
     <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:22px">Chia sẻ kỷ lục đỉnh cao của bạn với cộng đồng.</p>
     <div class="card"><div class="card-body-lg">
     <form id="uf" style="display:flex;flex-direction:column;gap:18px;">
-      <div class="form-group">
-        <label class="form-label">Video File *</label>
-        <input class="form-input" type="file" name="vfile" accept="video/mp4,video/webm" required />
+    <div class="form-group">
+        <label class="form-label">Link Video * <span style="color:var(--text-dim)">(YouTube, Google Drive...)</span></label>
+        <input class="form-input" type="url" name="vurl" placeholder="https://www.youtube.com/watch?v=..." required />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group"><label class="form-label">Bản đồ *</label>${mkCombobox('map',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...')}</div>
@@ -393,8 +390,8 @@ async function renderUpload() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
-          <label class="form-label">Thời gian * <span style="color:var(--text-dim)">(p:gg:mm)</span></label>
-          <input class="form-input" name="rec" placeholder="1:23:456" style="font-family:monospace;letter-spacing:0.05em" required pattern="\\d+:\\d{2}:\\d{3}"/>
+          <label class="form-label">Thời gian * <span style="color:var(--text-dim)">(p:gg:cc)</span></label>
+          <input class="form-input" name="rec" placeholder="1:23:45" style="font-family:monospace;letter-spacing:0.05em" required/>
         </div>
         <div class="form-group"><label class="form-label">Pet <span style="color:var(--text-dim)">(Tùy chọn)</span></label>${mkCombobox('pet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet')}</div>
       </div>
@@ -409,7 +406,7 @@ async function renderUpload() {
         <label class="form-label">Mô tả <span style="color:var(--text-dim)">(Tùy chọn)</span></label>
         <textarea class="form-input" name="desc" placeholder="Bạn có mẹo chạy, cấu hình xe nào muốn chia sẻ không?"></textarea>
       </div>
-      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;" type="submit" id="ub" style="padding:12px">&#9650; Tải lên Record</button>
+      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;padding:12px" type="submit" id="ub">&#9650; Tải lên Record</button>
     </form>
     </div></div>
   </div>`;
@@ -418,23 +415,14 @@ async function renderUpload() {
     const mapId=$('cb-map')?.dataset.value, carId=$('cb-car')?.dataset.value;
     if(!mapId||!carId){toast('Vui lòng chọn Bản đồ và Xe','error');return;}
     const rec=e.target.rec.value;
-    if(!/^\d+:\d{2}:\d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:mm (VD: 1:23:456)','error');return;}
+    if(!/^\d+:\d{2}:\d{2}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:cc (VD: 1:23:45)','error');return;}
     const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên...';
     try {
-      const fd = new FormData();
-      fd.append('video_file', e.target.vfile.files[0]);
-      fd.append('map_id', mapId);
-      fd.append('car_id', carId);
-      if($('cb-pet')?.dataset.value) fd.append('pet_id', $('cb-pet').dataset.value);
-      fd.append('record_ms', parseRecord(rec));
-      fd.append('description', e.target.desc.value);
-      fd.append('visibility', e.target.vis.value);
-      const r = await fetch(`${API}/videos`, {
-        method:'POST',
-        headers: {'Authorization': `Bearer ${getToken()}`},
-        body: fd
-      });
-      if(!r.ok) throw new Error((await r.json()).detail||'Lỗi tải lên');
+      await apiFetch('/videos',{method:'POST',body:JSON.stringify({
+        video_url:e.target.vurl.value, map_id:mapId, car_id:carId,
+        pet_id:$('cb-pet')?.dataset.value||null, record_ms:parseRecord(rec),
+        description:e.target.desc.value, visibility:e.target.vis.value
+      })});
       toast('Đăng record thành công!'); navigate('/');
     } catch(err){ toast(err.message,'error'); b.disabled=false; b.innerHTML='&#9650; Tải lên Record'; }
   };
@@ -817,8 +805,8 @@ window.editRecord = async function(id) {
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
-            <label class="form-label">Thời gian <span style="color:var(--text-dim)">(p:gg:mm)</span></label>
-            <input class="form-input" name="rec" value="${fmtMs(v.record_ms)}" style="font-family:monospace;letter-spacing:0.05em" required pattern="\\d+:\\d{2}:\\d{3}"/>
+            <label class="form-label">Thời gian <span style="color:var(--text-dim)">(p:gg:cc)</span></label>
+            <input class="form-input" name="rec" value="${fmtMs(v.record_ms)}" style="font-family:monospace;letter-spacing:0.05em" required/>
           </div>
           <div class="form-group"><label class="form-label">Pet</label>${mkCombobox('epet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet', v.pet_id||'')}</div>
         </div>
@@ -844,7 +832,7 @@ window.editRecord = async function(id) {
       e.preventDefault();
       const mapId=$('cb-emap')?.dataset.value, carId=$('cb-ecar')?.dataset.value, petId=$('cb-epet')?.dataset.value;
       const rec = e.target.rec.value;
-      if(!/^\d+:\d{2}:\d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:mm (VD: 1:23:456)','error');return;}
+      if(!/^\d+:\d{2}:\d{2}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:cc (VD: 1:23:45)','error');return;}
       const payload = {
         map_id: mapId, car_id: carId, pet_id: petId||null,
         record_ms: parseRecord(rec),
