@@ -1175,7 +1175,7 @@ async function renderAdmin() {
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Phân khúc</th><th>Mã ID</th></tr></thead>
         <tbody>${cars.map(c=>`<tr><td style="font-weight:600">${esc(c.name)}</td><td><span class="badge badge-orange">${esc(c.car_class||'?')}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${c.id}</td></tr>`).join('')}</tbody>
         </table></div>`:
-      `<div class="card"><div class="card-body">
+      tab==='pets'?`<div class="card"><div class="card-body">
           <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Pet mới</div>
           <div class="admin-add-form">
             <div class="form-group"><label class="form-label">Tên Pet *</label><input class="form-input" id="pn" placeholder="Tên Pet"/></div>
