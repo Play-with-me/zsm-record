@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, text
 from .database import engine, Base, AsyncSessionLocal
-from .models import Car
+from .models import Car, Pet
 from .routers import auth, videos, masters, board, users
 
 app = FastAPI(title="ZSM Record API")
@@ -69,14 +69,47 @@ async def reseed_cars():
         await session.commit()
     print(f"[OK] Reseed cars: da them {len(cars_to_add)} xe (A/T phan loai chinh xac).")
 
+async def reseed_pets():
+    """Wipe and re-seed pets table from pets_list.txt."""
+    pets_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'pets_list.txt')
+    if not os.path.exists(pets_file):
+        print("[WARN] Khong tim thay pets_list.txt, bo qua reseed.")
+        return
+
+    with open(pets_file, 'r', encoding='utf-8-sig') as f:
+        lines = f.readlines()
+
+    pets_to_add = []
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        # Strip bullet characters
+        if line.startswith('\u2022') or line.startswith('\u00b7'):
+            line = line[1:].strip()
+        name = line.strip()
+        if name:
+            pets_to_add.append(name)
+
+    async with AsyncSessionLocal() as session:
+        # Delete ALL pets first
+        await session.execute(delete(Pet))
+        # Re-add from file
+        for name in pets_to_add:
+            session.add(Pet(name=name))
+        await session.commit()
+    print(f"[OK] Reseed pets: da them {len(pets_to_add)} pet.")
+
+
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     try:
         await reseed_cars()
+        await reseed_pets()
     except Exception as e:
-        print(f"[WARN] reseed_cars gap loi: {e}")
+        print(f"[WARN] reseed gap loi: {e}")
 
 @app.get("/")
 async def root():
