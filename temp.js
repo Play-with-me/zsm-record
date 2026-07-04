@@ -436,25 +436,29 @@ async function renderUpload() {
 
       // Bước 2: Bắn dữ liệu về Backend
       b.innerHTML='<span class="spinner"></span> Đang lưu kỷ lục (2/2)...';
-      const r = await fetch(`${API}/videos`, {
+      const payload = {
+        video_url: videoUrl,
+        map_id: mapId,
+        car_id: carId,
+        pet_id: $('cb-pet')?.dataset.value || null,
+        record_ms: parseRecord(rec),
+        description: e.target.desc.value,
+        visibility: e.target.vis.value
+      };
+      
+      const r = await apiFetch('/videos', {
         method:'POST',
-        headers: {
-          'Authorization': `Bearer ${getToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          video_url: videoUrl,
-          map_id: mapId,
-          car_id: carId,
-          pet_id: $('cb-pet')?.dataset.value || null,
-          record_ms: parseRecord(rec),
-          description: e.target.desc.value,
-          visibility: e.target.vis.value
-        })
+        body: JSON.stringify(payload)
       });
+      
       if(!r.ok) throw new Error((await r.json()).detail||'Lỗi tải lên máy chủ');
       toast('Đăng record thành công!'); navigate('/');
-    } catch(err){ toast(err.message,'error'); b.disabled=false; b.innerHTML='&#9650; Tải lên Record'; }
+    } catch(err){ 
+      console.error(err);
+      toast(err.message,'error'); 
+      b.disabled=false; 
+      b.innerHTML='&#9650; Tải lên Record'; 
+    }
   };
 }
 
