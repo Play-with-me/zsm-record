@@ -754,7 +754,7 @@ function renderLogin() {
     </div>
     <form id="lf" style="display:flex;flex-direction:column;gap:14px;">
       <div class="form-group"><label class="form-label">Tài khoản</label><input class="form-input" name="u" placeholder="Nhập tài khoản" required /></div>
-      <div class="form-group"><label class="form-label">Mật khẩu</label><input class="form-input" type="password" name="p" placeholder="Nhập mật khẩu" required /></div>
+      <div class="form-group"><label class="form-label">Mật khẩu</label><div style="position:relative;"><input class="form-input" type="password" name="p" placeholder="Nhập mật khẩu" required style="padding-right:40px;"/><button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;">&#128065;</button></div></div>
       <button class="btn btn-primary" type="submit" id="lb">Đăng nhập</button>
     </form>
     <div class="auth-foot">Chưa có tài khoản? <a href="#/register">Đăng ký tại đây</a></div>

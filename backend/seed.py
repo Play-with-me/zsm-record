@@ -11,14 +11,14 @@ async def init_db():
     async with AsyncSessionLocal() as db:
         # Tao tai khoan Admin
         admin_data = schemas.UserCreate(
-            username="Admin",
+            username="Boss",
             email="admin@zsmrecord.com",
-            password="adminpassword"
+            password="bossclantnx1"
         )
         admin_user = await crud.create_user(db, admin_data)
         admin_user.role = models.RoleEnum.ADMIN
         await db.commit()
-        print(f"[OK] Tai khoan Admin da tao: username=Admin | password=adminpassword")
+        print(f"[OK] Tai khoan Admin da tao: username=Boss | password=bossclantnx1")
         print("[OK] Co so du lieu da khoi tao thanh cong (khong co du lieu mau).")
 
 if __name__ == "__main__":
