@@ -394,7 +394,7 @@ async function renderUpload() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group">
           <label class="form-label">Thời gian * <span style="color:var(--text-dim)">(p:gg:mm)</span></label>
-          <input class="form-input" name="rec" placeholder="1:23:456" style="font-family:monospace;letter-spacing:0.05em" required pattern="\\d+:\\d{2}:\\d{3}"/>
+          <input class="form-input" name="rec" placeholder="1:23:456" style="font-family:monospace;letter-spacing:0.05em" required pattern="d+:d{2}:d{3}"/>
         </div>
         <div class="form-group"><label class="form-label">Pet <span style="color:var(--text-dim)">(Tùy chọn)</span></label>${mkCombobox('pet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet')}</div>
       </div>
@@ -418,7 +418,7 @@ async function renderUpload() {
     const mapId=$('cb-map')?.dataset.value, carId=$('cb-car')?.dataset.value;
     if(!mapId||!carId){toast('Vui lòng chọn Bản đồ và Xe','error');return;}
     const rec=e.target.rec.value;
-    if(!/^\d+:\d{2}\.\d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg.mmm (VD: 1:23.456)','error');return;}
+    if(!/^d+:d{2}.d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg.mmm (VD: 1:23.456)','error');return;}
     const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên...';
     try {
       await apiFetch('/videos',{method:'POST',body:JSON.stringify({
@@ -787,7 +787,7 @@ window.adminEditUser = function(id, curName, curEmail) {
   $('euf').onsubmit=async e=>{
     e.preventDefault();
     try {
-      await apiFetch(\`/users/\${id}/admin\`, {method:'PUT', body:JSON.stringify({username: e.target.un.value, email: e.target.em.value})});
+      await apiFetch(`/users/${id}/admin`, {method:'PUT', body:JSON.stringify({username: e.target.un.value, email: e.target.em.value})});
       overlay.remove(); toast('Đã cập nhật!'); window.adminTab('users');
     } catch(err){ toast(err.message, 'error'); }
   };
@@ -795,54 +795,54 @@ window.adminEditUser = function(id, curName, curEmail) {
 
 window.editRecord = async function(id) {
   try {
-    const v = await apiFetch(\`/videos/\${id}\`);
+    const v = await apiFetch(`/videos/${id}`);
     const [maps, cars, pets] = await Promise.all([apiFetch('/maps'), apiFetch('/cars'), apiFetch('/pets')]);
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.innerHTML = \`<div class="modal" style="max-width:500px">
+    overlay.innerHTML = `<div class="modal" style="max-width:500px">
       <h3>Sửa Record</h3>
       <form id="erf" style="display:flex;flex-direction:column;gap:14px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div class="form-group"><label class="form-label">Bản đồ</label>\${mkCombobox('emap',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...', v.map_id)}</div>
-          <div class="form-group"><label class="form-label">Siêu xe</label>\${mkCombobox('ecar',cars.map(c=>({label:c.name,value:c.id})),'Chọn siêu xe...', v.car_id)}</div>
+          <div class="form-group"><label class="form-label">Bản đồ</label>${mkCombobox('emap',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...', v.map_id)}</div>
+          <div class="form-group"><label class="form-label">Siêu xe</label>${mkCombobox('ecar',cars.map(c=>({label:c.name,value:c.id})),'Chọn siêu xe...', v.car_id)}</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
             <label class="form-label">Thời gian <span style="color:var(--text-dim)">(p:gg:mm)</span></label>
-            <input class="form-input" name="rec" value="\${fmtMs(v.record_ms)}" style="font-family:monospace;letter-spacing:0.05em" required pattern="\\\\d+:\\\\d{2}:\\\\d{3}"/>
+            <input class="form-input" name="rec" value="${fmtMs(v.record_ms)}" style="font-family:monospace;letter-spacing:0.05em" required pattern="d+:d{2}:d{3}"/>
           </div>
-          <div class="form-group"><label class="form-label">Pet</label>\${mkCombobox('epet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet', v.pet_id||'')}</div>
+          <div class="form-group"><label class="form-label">Pet</label>${mkCombobox('epet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet', v.pet_id||'')}</div>
         </div>
         <div class="form-group">
           <label class="form-label">Quyền riêng tư</label>
           <select class="form-input" name="vis">
-            <option value="PUBLIC" \${v.visibility==='PUBLIC'?'selected':''}>Công khai</option>
-            <option value="PRIVATE" \${v.visibility==='PRIVATE'?'selected':''}>Riêng tư</option>
+            <option value="PUBLIC" ${v.visibility==='PUBLIC'?'selected':''}>Công khai</option>
+            <option value="PRIVATE" ${v.visibility==='PRIVATE'?'selected':''}>Riêng tư</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Mô tả</label>
-          <textarea class="form-input" name="desc">\${esc(v.description||'')}</textarea>
+          <textarea class="form-input" name="desc">${esc(v.description||'')}</textarea>
         </div>
         <div class="modal-actions" style="margin-top:10px">
           <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Hủy</button>
           <button type="submit" class="btn btn-primary btn-sm">Lưu Thay Đổi</button>
         </div>
       </form>
-    </div>\`;
+    </div>`;
     document.body.appendChild(overlay);
     $('erf').onsubmit = async e => {
       e.preventDefault();
       const mapId=$('cb-emap')?.dataset.value, carId=$('cb-ecar')?.dataset.value, petId=$('cb-epet')?.dataset.value;
       const rec = e.target.rec.value;
-      if(!/^\\d+:\\d{2}:\\d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:mm (VD: 1:23:456)','error');return;}
+      if(!/^d+:d{2}:d{3}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:mm (VD: 1:23:456)','error');return;}
       const payload = {
         map_id: mapId, car_id: carId, pet_id: petId||null,
         record_ms: parseRecord(rec),
         description: e.target.desc.value, visibility: e.target.vis.value
       };
       try {
-        await apiFetch(\`/videos/\${id}\`, {method:'PUT', body:JSON.stringify(payload)});
+        await apiFetch(`/videos/${id}`, {method:'PUT', body:JSON.stringify(payload)});
         overlay.remove(); toast('Đã cập nhật record!');
         if(window.location.hash.includes('board')) loadBoard(); else if(window.location.hash.includes('profile')) renderProfile(window.location.hash.split('/')[2]); else { renderHome(); }
       } catch(err){ toast(err.message, 'error'); }
