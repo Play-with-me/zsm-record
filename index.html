@@ -605,7 +605,7 @@ function mkCombobox(id, opts, placeholder, val='') {
       ${esc(o.label.trim())}</div>`;
   }
   return `<div class="combobox" id="cb-${id}">
-    <button type="button" class="combobox-trigger${val?' ':''}${val?'':'placeholder'}"
+    <button type="button" class="combobox-trigger${!val?' placeholder':''}"
       onclick="openCB('${id}')" id="cbt-${id}">
       <span class="selected-text ${!val?'placeholder':''}">${sel?esc(sel.label):placeholder}</span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10l5 5 5-5"/></svg>
