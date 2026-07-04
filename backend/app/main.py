@@ -80,6 +80,7 @@ async def reseed_pets():
         lines = f.readlines()
 
     pets_to_add = []
+    seen = set()
     for raw in lines:
         line = raw.strip()
         if not line:
@@ -88,8 +89,9 @@ async def reseed_pets():
         if line.startswith('\u2022') or line.startswith('\u00b7'):
             line = line[1:].strip()
         name = line.strip()
-        if name:
+        if name and name not in seen:
             pets_to_add.append(name)
+            seen.add(name)
 
     async with AsyncSessionLocal() as session:
         # Delete ALL pets first
