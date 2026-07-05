@@ -27,7 +27,8 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    window.location.href = "/";
+    // Full reload to clear all cached data and ensure fresh state
+    window.location.replace("/");
   };
 
   return (

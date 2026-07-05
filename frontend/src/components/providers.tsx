@@ -1,10 +1,41 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
+  const lastTokenRef = useRef<string | null>(
+    typeof window !== "undefined" ? localStorage.getItem("token") : null
+  );
+
+  useEffect(() => {
+    // Listen for token changes from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "token") {
+        lastTokenRef.current = e.newValue;
+        queryClient.clear();
+        queryClient.invalidateQueries();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // Poll for token changes within the same tab (localStorage events
+    // only fire across tabs, not within the same tab)
+    const interval = setInterval(() => {
+      const currentToken = localStorage.getItem("token");
+      if (currentToken !== lastTokenRef.current) {
+        lastTokenRef.current = currentToken;
+        queryClient.clear();
+        queryClient.invalidateQueries();
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
