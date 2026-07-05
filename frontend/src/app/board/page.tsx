@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 export default function RecordBoardPage() {
   const router = useRouter();
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const [mapId, setMapId] = useState("");
   const [carId, setCarId] = useState("");
   const [petId, setPetId] = useState("");
@@ -34,7 +35,7 @@ export default function RecordBoardPage() {
   const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: async () => (await api.get("/pets")).data });
 
   const { data: board = [], isLoading } = useQuery({
-    queryKey: ["record-board", mapId, carId, petId],
+    queryKey: ["record-board", mapId, carId, petId, token],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (mapId) params.append("map_id", mapId);
