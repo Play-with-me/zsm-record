@@ -31,7 +31,7 @@ export default function LoginPage() {
       localStorage.setItem("token", res.data.access_token);
       toast.success("Đăng nhập thành công!");
       // Full reload to refresh all data with the new user's permissions
-      window.location.replace("/");
+      router.push("/");
     } catch (error: any) {
       const detail = error?.response?.data?.detail;
       if (detail === "Tài khoản đã bị khóa") {
