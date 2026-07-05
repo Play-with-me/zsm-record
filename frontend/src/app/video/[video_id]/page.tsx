@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, PlayCircle } from "lucide-react";
+import { AlertTriangle, PlayCircle, Heart } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -46,6 +46,31 @@ export default function VideoPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [forbidden, setForbidden] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLiking, setIsLiking] = useState(false);
+
+  const handleLike = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Vui lòng đăng nhập để thích record này");
+        router.push("/login");
+        return;
+      }
+      setIsLiking(true);
+      const res = await api.post(`/videos/${videoId}/like`);
+      setData((prev) => prev ? { ...prev, likes: res.data.likes } : prev);
+      toast.success("Đã thích!");
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        toast.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
+        router.push("/login");
+      } else {
+        toast.error("Lỗi khi thích video");
+      }
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -53,13 +78,8 @@ export default function VideoPage() {
     async function load() {
       if (!videoId) return;
 
-      // Check if user is logged in
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Vui lòng đăng nhập để xem record");
-        router.push("/login");
-        return;
-      }
+      // Removed redirect so guests can view
+
 
       setLoading(true);
       setForbidden(false);
@@ -215,7 +235,18 @@ export default function VideoPage() {
 
             <div className="flex items-center justify-between gap-3">
               <span className="text-gray-400">Likes</span>
-              <span className="font-semibold">{data.likes}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{data.likes}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLike} 
+                  disabled={isLiking}
+                  className="h-8 w-8 p-0 text-pink-500 hover:text-pink-400 hover:bg-pink-500/10"
+                >
+                  <Heart size={18} className={isLiking ? "animate-pulse" : ""} />
+                </Button>
+              </div>
             </div>
 
             {data.description ? (

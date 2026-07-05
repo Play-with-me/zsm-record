@@ -22,14 +22,8 @@ export default function RecordBoardPage() {
   const [carId, setCarId] = useState("");
   const [petId, setPetId] = useState("");
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Vui lòng đăng nhập để xem bảng điểm");
-      router.push("/login");
-    }
-  }, [router]);
+  // Allowed for guests to view the board
+
 
   const { data: maps = [] } = useQuery({ queryKey: ["maps"], queryFn: async () => (await api.get("/maps")).data });
   const { data: cars = [] } = useQuery({ queryKey: ["cars"], queryFn: async () => (await api.get("/cars")).data });

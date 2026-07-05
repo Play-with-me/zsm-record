@@ -53,7 +53,7 @@ async def read_videos(
 async def read_video(
     video_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[models.User] = Depends(get_current_user),
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
 ):
     db_video = await crud.get_video(db, video_id=video_id)
     if db_video is None:
@@ -109,3 +109,18 @@ async def delete_video(
     await db.delete(db_video)
     await db.commit()
     return {"message": "Video deleted"}
+
+@router.post("/{video_id}/like")
+async def like_video(
+    video_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
+):
+    db_video = await crud.get_video(db, video_id=video_id)
+    if db_video is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+        
+    db_video.likes += 1
+    await db.commit()
+    return {"message": "Liked successfully", "likes": db_video.likes}
+
