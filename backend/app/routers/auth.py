@@ -7,6 +7,7 @@ from ..database import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     username = auth.verify_token(token)
@@ -19,6 +20,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     user = await crud.get_user_by_username(db, username=username)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+from typing import Optional
+
+async def get_optional_current_user(token: Optional[str] = Depends(oauth2_scheme_optional), db: AsyncSession = Depends(get_db)):
+    if not token:
+        return None
+    username = auth.verify_token(token)
+    if not username:
+        return None
+    user = await crud.get_user_by_username(db, username=username)
     return user
 
 async def get_current_admin(current_user: models.User = Depends(get_current_user)):

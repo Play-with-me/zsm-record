@@ -49,6 +49,28 @@ export default function AdminPanel() {
   const { data: maps = [], refetch: refetchMaps } = useQuery({ queryKey: ["maps"], queryFn: async () => (await api.get("/maps")).data, enabled: isAdmin });
   const { data: cars = [], refetch: refetchCars } = useQuery({ queryKey: ["cars"], queryFn: async () => (await api.get("/cars")).data, enabled: isAdmin });
   const { data: pets = [], refetch: refetchPets } = useQuery({ queryKey: ["pets"], queryFn: async () => (await api.get("/pets")).data, enabled: isAdmin });
+  const { data: users = [], refetch: refetchUsers } = useQuery({ queryKey: ["users"], queryFn: async () => (await api.get("/users")).data, enabled: isAdmin });
+
+  const handleToggleUser = async (userId: string, currentStatus: boolean) => {
+    try {
+      await api.put(`/users/${userId}/admin`, { is_active: !currentStatus });
+      toast.success(currentStatus ? "User locked" : "User unlocked");
+      refetchUsers();
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail || "Failed to update user");
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to permanently delete this user? This cannot be undone.")) return;
+    try {
+      await api.delete(`/users/${userId}`);
+      toast.success("User deleted");
+      refetchUsers();
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail || "Failed to delete user");
+    }
+  };
 
   const handleAddMap = async () => {
     try {
@@ -102,6 +124,7 @@ export default function AdminPanel() {
           <TabsTrigger value="maps">Maps</TabsTrigger>
           <TabsTrigger value="cars">Cars</TabsTrigger>
           <TabsTrigger value="pets">Pets</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
         
         {/* Maps Tab */}
@@ -211,6 +234,69 @@ export default function AdminPanel() {
                       {pet.image ? <img src={pet.image} alt={pet.name} className="h-8 w-8 object-cover rounded-full" /> : "-"}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-gray-500">{pet.id}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* Users Tab */}
+        <TabsContent value="users" className="space-y-6 mt-6">
+          <Card className="bg-gray-900/30 border-white/10 overflow-hidden">
+            <Table>
+              <TableHeader className="bg-black/40">
+                <TableRow className="border-white/10">
+                  <TableHead>Avatar</TableHead>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user: any) => (
+                  <TableRow key={user.id} className="border-white/5">
+                    <TableCell>
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.username} className="h-8 w-8 object-cover rounded-full" />
+                      ) : (
+                        <div className="h-8 w-8 bg-gray-800 rounded-full" />
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{user.username}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 text-xs rounded-full ${user.role === 'ADMIN' ? 'bg-purple-900 text-purple-300' : 'bg-gray-800 text-gray-300'}`}>
+                        {user.role}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 text-xs rounded-full ${user.is_active ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                        {user.is_active ? 'Active' : 'Locked'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleToggleUser(user.id, user.is_active)}
+                          className={user.is_active ? 'text-red-500 hover:text-red-400' : 'text-green-500 hover:text-green-400'}
+                        >
+                          {user.is_active ? 'Lock' : 'Unlock'}
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={user.role === 'ADMIN'}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

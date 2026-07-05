@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from .. import crud, schemas, models
 from ..database import get_db
-from .auth import get_current_user
+from .auth import get_current_user, get_optional_current_user
 
 
 
@@ -30,23 +30,11 @@ async def read_videos(
     car_id: Optional[str] = None,
     user_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[models.User] = Depends(get_current_user),
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
 ):
+    is_admin = current_user is not None and current_user.role == models.RoleEnum.ADMIN
+    current_user_id = current_user.id if current_user else None
 
-    # Nếu chưa login => chỉ public
-    if current_user is None or current_user.role != models.RoleEnum.ADMIN:
-        videos = await crud.get_videos(
-            db,
-            skip=skip,
-            limit=limit,
-            map_id=map_id,
-            car_id=car_id,
-            user_id=None,
-            visibility=models.VisibilityEnum.PUBLIC,
-        )
-        return videos
-
-    # Admin có thể xem cả public/private
     videos = await crud.get_videos(
         db,
         skip=skip,
@@ -55,6 +43,8 @@ async def read_videos(
         car_id=car_id,
         user_id=user_id,
         visibility=None,
+        current_user_id=current_user_id,
+        is_admin=is_admin
     )
     return videos
 

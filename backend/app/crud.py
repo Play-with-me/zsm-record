@@ -103,6 +103,8 @@ async def get_videos(
     car_id: str = None,
     user_id: str = None,
     visibility: models.VisibilityEnum = None,
+    current_user_id: str = None,
+    is_admin: bool = False
 ):
     query = select(models.Video).options(
         selectinload(models.Video.user),
@@ -111,15 +113,26 @@ async def get_videos(
         selectinload(models.Video.pet)
     ).order_by(desc(models.Video.created_at))
 
-    if visibility is not None:
-        query = query.filter(models.Video.visibility == visibility)
-
     if map_id:
         query = query.filter(models.Video.map_id == map_id)
     if car_id:
         query = query.filter(models.Video.car_id == car_id)
     if user_id:
         query = query.filter(models.Video.user_id == user_id)
+
+    if not is_admin:
+        if current_user_id:
+            query = query.filter(
+                or_(
+                    models.Video.visibility == models.VisibilityEnum.PUBLIC,
+                    models.Video.user_id == current_user_id
+                )
+            )
+        else:
+            query = query.filter(models.Video.visibility == models.VisibilityEnum.PUBLIC)
+
+    if visibility is not None:
+        query = query.filter(models.Video.visibility == visibility)
 
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
