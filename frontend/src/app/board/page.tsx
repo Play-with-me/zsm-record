@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,11 +11,23 @@ import { ExternalLink, Trophy, Clock, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function RecordBoardPage() {
+  const router = useRouter();
   const [mapId, setMapId] = useState("");
   const [carId, setCarId] = useState("");
   const [petId, setPetId] = useState("");
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Vui lòng đăng nhập để xem bảng điểm");
+      router.push("/login");
+    }
+  }, [router]);
 
   const { data: maps = [] } = useQuery({ queryKey: ["maps"], queryFn: async () => (await api.get("/maps")).data });
   const { data: cars = [] } = useQuery({ queryKey: ["cars"], queryFn: async () => (await api.get("/cars")).data });

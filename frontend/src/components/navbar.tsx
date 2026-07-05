@@ -27,8 +27,8 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    // Full reload to clear all cached data and ensure fresh state
-    window.location.replace("/");
+    // Use full page reload to ensure auth state is cleared
+    window.location.reload();
   };
 
   return (

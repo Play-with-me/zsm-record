@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
       localStorage.setItem("token", loginRes.data.access_token);
       // Full reload to refresh all data with the new user's permissions
-      window.location.href = "/";
+      window.location.replace("/");
     } catch (error: any) {
       const detail = error?.response?.data?.detail;
       toast.error(detail || "Đăng ký thất bại, vui lòng thử lại");
