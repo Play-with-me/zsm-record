@@ -177,6 +177,10 @@ async def startup():
             await conn.execute(text("ALTER TABLE maps ADD COLUMN difficulty INTEGER DEFAULT 1"))
         except Exception:
             pass
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
+        except Exception:
+            pass
 
     try:
         await reseed_maps()
