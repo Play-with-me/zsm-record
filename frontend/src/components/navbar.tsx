@@ -29,7 +29,7 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    router.refresh();
+    window.location.href = "/";
   };
 
   return (
