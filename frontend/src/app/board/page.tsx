@@ -7,12 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { FormCombobox } from "@/components/form-combobox";
-import { ExternalLink, Trophy, Clock, PlayCircle } from "lucide-react";
+import { Trophy, Clock, PlayCircle, Map as MapIcon } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export default function RecordBoardPage() {
   const router = useRouter();
@@ -34,17 +35,17 @@ export default function RecordBoardPage() {
   const { data: cars = [] } = useQuery({ queryKey: ["cars"], queryFn: async () => (await api.get("/cars")).data });
   const { data: pets = [] } = useQuery({ queryKey: ["pets"], queryFn: async () => (await api.get("/pets")).data });
 
-  const { data: board = [], isLoading } = useQuery({
-    queryKey: ["record-board", mapId, carId, petId, token],
+  const { data: boardGroups = [], isLoading } = useQuery({
+    queryKey: ["record-board-by-map", mapId, carId, petId, token],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (mapId) params.append("map_id", mapId);
       if (carId) params.append("car_id", carId);
       if (petId) params.append("pet_id", petId);
-      const res = await api.get(`/record-board?${params.toString()}`);
+      const res = await api.get(`/record-board/by-map?${params.toString()}`);
       return res.data;
     },
-    enabled: true // Always fetch, even without filters (shows overall fastest across all maps/cars which might be chaotic, but let's encourage map filtering)
+    enabled: !!token
   });
 
   const formatMsToTime = (ms: number) => {
@@ -66,7 +67,7 @@ export default function RecordBoardPage() {
             <Trophy className="text-yellow-500" size={36} />
             Record Board
           </h1>
-          <p className="text-gray-400 mt-2">Bảng vàng vinh danh những tay đua kiệt xuất nhất.</p>
+          <p className="text-gray-400 mt-2">Bảng vàng vinh danh những tay đua kiệt xuất nhất theo từng bản đồ.</p>
         </div>
       </div>
 
@@ -89,23 +90,24 @@ export default function RecordBoardPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-gray-900/40 rounded-2xl border border-white/10 overflow-hidden backdrop-blur-md">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-black/40">
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="w-[100px] text-center font-bold text-gray-300">Rank</TableHead>
-                <TableHead className="font-bold text-gray-300">Player</TableHead>
-                <TableHead className="font-bold text-gray-300">Car</TableHead>
-                <TableHead className="font-bold text-gray-300">Pet</TableHead>
-                <TableHead className="font-bold text-gray-300">Record</TableHead>
-                <TableHead className="text-right font-bold text-gray-300">Video</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(5)].map((_, i) => (
+      {/* Grouped Tables */}
+      <div className="space-y-12">
+        {isLoading ? (
+          <div className="bg-gray-900/40 rounded-2xl border border-white/10 overflow-hidden backdrop-blur-md p-6">
+            <Skeleton className="h-8 w-64 mb-6" />
+            <Table>
+              <TableHeader className="bg-black/40">
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="w-[100px] text-center font-bold text-gray-300">Rank</TableHead>
+                  <TableHead className="font-bold text-gray-300">Player</TableHead>
+                  <TableHead className="font-bold text-gray-300">Car</TableHead>
+                  <TableHead className="font-bold text-gray-300">Pet</TableHead>
+                  <TableHead className="font-bold text-gray-300">Record</TableHead>
+                  <TableHead className="text-right font-bold text-gray-300">Video</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(3)].map((_, i) => (
                   <TableRow key={i} className="border-white/5">
                     <TableCell><Skeleton className="h-6 w-8 mx-auto" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-32" /></TableCell>
@@ -114,67 +116,105 @@ export default function RecordBoardPage() {
                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                   </TableRow>
-                ))
-              ) : board.length === 0 ? (
-                <TableRow className="border-white/5 hover:bg-transparent">
-                  <TableCell colSpan={6} className="h-32 text-center text-gray-500">
-                    Chưa có kỷ lục nào thỏa mãn điều kiện.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                board.map((entry: any) => (
-                  <TableRow key={entry.video_id} className="border-white/5 hover:bg-white/5 transition-colors">
-                    <TableCell className="text-center">
-                      {entry.rank === 1 ? (
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 font-bold border border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.5)]">1</span>
-                      ) : entry.rank === 2 ? (
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-300/20 text-gray-300 font-bold border border-gray-300/50">2</span>
-                      ) : entry.rank === 3 ? (
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-700/20 text-orange-400 font-bold border border-orange-700/50">3</span>
-                      ) : (
-                        <span className="font-mono text-gray-400">{entry.rank}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8 border border-white/10">
-                          <AvatarImage src={entry.player.avatar} />
-                          <AvatarFallback className="bg-gray-800 text-xs">{entry.player.username.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-semibold">{entry.player.username}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-blue-900/20 text-blue-300 border-blue-900/50">
-                        {entry.car.name}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {entry.pet?.name && entry.pet.name !== "None" ? (
-                        <Badge variant="outline" className="bg-purple-900/20 text-purple-300 border-purple-900/50">
-                          {entry.pet.name}
-                        </Badge>
-                      ) : <span className="text-gray-600 text-sm italic">-</span>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-mono font-bold text-lg tracking-wider text-green-400 flex items-center gap-2">
-                        <Clock size={16} className="text-gray-500" />
-                        {formatMsToTime(entry.record_ms)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href={`/video/${entry.video_id}`}>
-                        <Button variant="ghost" size="icon" className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20">
-                          <PlayCircle size={20} />
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : boardGroups.length === 0 ? (
+          <div className="bg-gray-900/40 rounded-2xl border border-white/10 p-12 text-center backdrop-blur-md">
+            <p className="text-gray-500 text-lg">Chưa có kỷ lục nào thỏa mãn điều kiện.</p>
+          </div>
+        ) : (
+          boardGroups.map((group: any) => (
+            <div key={group.map.id} className="bg-gray-900/40 rounded-2xl border border-white/10 overflow-hidden backdrop-blur-md">
+              <div className="bg-gradient-to-r from-blue-900/40 to-purple-900/40 p-4 border-b border-white/10 flex items-center gap-4">
+                {group.map.image ? (
+                  <div className="relative w-16 h-12 rounded overflow-hidden border border-white/20 shadow-lg">
+                    <Image src={group.map.image} alt={group.map.name} fill className="object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-12 rounded bg-black/50 border border-white/20 flex items-center justify-center">
+                    <MapIcon size={24} className="text-gray-400" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">{group.map.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="bg-black/50 border-white/10 text-xs">
+                      Độ khó: {group.map.difficulty}★
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-black/40">
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead className="w-[100px] text-center font-bold text-gray-300">Rank</TableHead>
+                      <TableHead className="font-bold text-gray-300">Player</TableHead>
+                      <TableHead className="font-bold text-gray-300">Car</TableHead>
+                      <TableHead className="font-bold text-gray-300">Pet</TableHead>
+                      <TableHead className="font-bold text-gray-300">Record</TableHead>
+                      <TableHead className="text-right font-bold text-gray-300">Video</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.records.map((entry: any) => (
+                      <TableRow key={entry.video_id} className="border-white/5 hover:bg-white/5 transition-colors">
+                        <TableCell className="text-center">
+                          {entry.rank === 1 ? (
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 font-bold border border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.5)]">1</span>
+                          ) : entry.rank === 2 ? (
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-300/20 text-gray-300 font-bold border border-gray-300/50">2</span>
+                          ) : entry.rank === 3 ? (
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-700/20 text-orange-400 font-bold border border-orange-700/50">3</span>
+                          ) : (
+                            <span className="font-mono text-gray-400">{entry.rank}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 border border-white/10">
+                              <AvatarImage src={entry.player.avatar} />
+                              <AvatarFallback className="bg-gray-800 text-xs">{entry.player.username.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-semibold">{entry.player.username}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-blue-900/20 text-blue-300 border-blue-900/50">
+                            {entry.car.name}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {entry.pet?.name && entry.pet.name !== "None" ? (
+                            <Badge variant="outline" className="bg-purple-900/20 text-purple-300 border-purple-900/50">
+                              {entry.pet.name}
+                            </Badge>
+                          ) : <span className="text-gray-600 text-sm italic">-</span>}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-mono font-bold text-lg tracking-wider text-green-400 flex items-center gap-2">
+                            <Clock size={16} className="text-gray-500" />
+                            {formatMsToTime(entry.record_ms)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/video/${entry.video_id}`}>
+                            <Button variant="ghost" size="icon" className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20">
+                              <PlayCircle size={20} />
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,8 +30,9 @@ export default function LoginPage() {
 
       localStorage.setItem("token", res.data.access_token);
       toast.success("Đăng nhập thành công!");
-      // Full reload to refresh all data with the new user's permissions
-      window.location.href = "/";
+      // Clear React Query cache then force full page reload
+      queryClient.clear();
+      window.location.replace("/");
     } catch (error: any) {
       const detail = error?.response?.data?.detail;
       if (detail === "Tài khoản đã bị khóa") {

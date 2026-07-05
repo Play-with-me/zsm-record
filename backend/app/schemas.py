@@ -128,3 +128,9 @@ class RecordBoardEntry(BaseModel):
     thumbnail: Optional[str] = None
     class Config:
         from_attributes = True
+
+class MapLeaderboardEntry(BaseModel):
+    map: MapResponse
+    records: List[RecordBoardEntry]
+    class Config:
+        from_attributes = True

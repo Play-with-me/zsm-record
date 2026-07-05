@@ -4,7 +4,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Don't use stale cache - always refetch on mount
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+      },
+    },
+  }));
   const lastTokenRef = useRef<string | null>(
     typeof window !== "undefined" ? localStorage.getItem("token") : null
   );
@@ -14,8 +22,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "token") {
         lastTokenRef.current = e.newValue;
-        queryClient.clear();
-        queryClient.invalidateQueries();
+        // resetQueries clears cache AND triggers refetch for active queries
+        queryClient.resetQueries();
       }
     };
     window.addEventListener("storage", handleStorageChange);
@@ -26,10 +34,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       const currentToken = localStorage.getItem("token");
       if (currentToken !== lastTokenRef.current) {
         lastTokenRef.current = currentToken;
-        queryClient.clear();
-        queryClient.invalidateQueries();
+        // resetQueries clears cache AND triggers refetch for active queries
+        queryClient.resetQueries();
       }
-    }, 500);
+    }, 300);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);

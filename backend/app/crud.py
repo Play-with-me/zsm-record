@@ -184,3 +184,48 @@ async def get_record_board(db: AsyncSession, map_id: str = None, car_id: str = N
             "thumbnail": video.thumbnail
         })
     return board
+
+async def get_record_board_by_map(db: AsyncSession, map_id: str = None, car_id: str = None, pet_id: str = None):
+    query = select(models.Video).options(
+        selectinload(models.Video.user),
+        selectinload(models.Video.map),
+        selectinload(models.Video.car),
+        selectinload(models.Video.pet)
+    ).filter(models.Video.visibility == models.VisibilityEnum.PUBLIC)
+
+    if map_id:
+        query = query.filter(models.Video.map_id == map_id)
+    if car_id:
+        query = query.filter(models.Video.car_id == car_id)
+    if pet_id:
+        query = query.filter(models.Video.pet_id == pet_id)
+
+    query = query.order_by(models.Video.map_id, asc(models.Video.record_ms))
+    
+    result = await db.execute(query)
+    videos = result.scalars().all()
+    
+    map_groups = {}
+    for video in videos:
+        map_id = video.map_id
+        if map_id not in map_groups:
+            map_groups[map_id] = {
+                "map": video.map,
+                "records": []
+            }
+        
+        rank = len(map_groups[map_id]["records"]) + 1
+        
+        map_groups[map_id]["records"].append({
+            "rank": rank,
+            "player": video.user,
+            "car": video.car,
+            "pet": video.pet,
+            "record_ms": video.record_ms,
+            "video_id": video.id,
+            "video_url": video.video_url or "",
+            "thumbnail": video.thumbnail
+        })
+        
+    # Sort groups by map name or leave as is (dict values)
+    return list(map_groups.values())

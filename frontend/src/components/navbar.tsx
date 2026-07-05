@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Navbar() {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -29,7 +29,9 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUser(null);
-    window.location.href = "/";
+    // Clear React Query cache then force full page reload
+    queryClient.clear();
+    window.location.replace("/");
   };
 
   return (

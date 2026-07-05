@@ -15,3 +15,13 @@ async def read_record_board(
 ):
     # This will return the top records dynamically based on filters
     return await crud.get_record_board(db, map_id=map_id, car_id=car_id, pet_id=pet_id)
+
+@router.get("/by-map", response_model=List[schemas.MapLeaderboardEntry])
+async def read_record_board_by_map(
+    map_id: Optional[str] = None, 
+    car_id: Optional[str] = None,
+    pet_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Return leaderboard grouped by map, ranked by lowest record time"""
+    return await crud.get_record_board_by_map(db, map_id=map_id, car_id=car_id, pet_id=pet_id)
