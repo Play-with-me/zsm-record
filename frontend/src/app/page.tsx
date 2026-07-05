@@ -9,8 +9,9 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const { data: videos, isLoading, isError } = useQuery({
-    queryKey: ["latest-videos"],
+    queryKey: ["latest-videos", token],
     queryFn: async () => {
       const res = await api.get("/videos?limit=8");
       return res.data;

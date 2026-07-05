@@ -46,10 +46,11 @@ export default function AdminPanel() {
     checkAdmin();
   }, [router]);
 
-  const { data: maps = [], refetch: refetchMaps } = useQuery({ queryKey: ["maps"], queryFn: async () => (await api.get("/maps")).data, enabled: isAdmin });
-  const { data: cars = [], refetch: refetchCars } = useQuery({ queryKey: ["cars"], queryFn: async () => (await api.get("/cars")).data, enabled: isAdmin });
-  const { data: pets = [], refetch: refetchPets } = useQuery({ queryKey: ["pets"], queryFn: async () => (await api.get("/pets")).data, enabled: isAdmin });
-  const { data: users = [], refetch: refetchUsers } = useQuery({ queryKey: ["users"], queryFn: async () => (await api.get("/users")).data, enabled: isAdmin });
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const { data: maps = [], refetch: refetchMaps } = useQuery({ queryKey: ["maps", token], queryFn: async () => (await api.get("/maps")).data, enabled: isAdmin });
+  const { data: cars = [], refetch: refetchCars } = useQuery({ queryKey: ["cars", token], queryFn: async () => (await api.get("/cars")).data, enabled: isAdmin });
+  const { data: pets = [], refetch: refetchPets } = useQuery({ queryKey: ["pets", token], queryFn: async () => (await api.get("/pets")).data, enabled: isAdmin });
+  const { data: users = [], refetch: refetchUsers } = useQuery({ queryKey: ["users", token], queryFn: async () => (await api.get("/users")).data, enabled: isAdmin });
 
   const handleToggleUser = async (userId: string, currentStatus: boolean) => {
     try {

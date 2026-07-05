@@ -10,6 +10,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         // Don't use stale cache - always refetch on mount
         staleTime: 0,
         refetchOnWindowFocus: true,
+        refetchInterval: 3000, // Fetch data continuously every 3s to avoid missing data
       },
     },
   }));
