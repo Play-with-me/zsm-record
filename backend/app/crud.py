@@ -95,13 +95,25 @@ async def create_video(db: AsyncSession, video: schemas.VideoCreate, user_id: st
     )
     return result.scalars().first()
 
-async def get_videos(db: AsyncSession, skip: int = 0, limit: int = 20, map_id: str = None, car_id: str = None, user_id: str = None):
+async def get_videos(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 20,
+    map_id: str = None,
+    car_id: str = None,
+    user_id: str = None,
+    visibility: models.VisibilityEnum = None,
+):
     query = select(models.Video).options(
         selectinload(models.Video.user),
         selectinload(models.Video.map),
         selectinload(models.Video.car),
         selectinload(models.Video.pet)
     ).order_by(desc(models.Video.created_at))
+
+    if visibility is not None:
+        query = query.filter(models.Video.visibility == visibility)
+
     if map_id:
         query = query.filter(models.Video.map_id == map_id)
     if car_id:
@@ -112,6 +124,7 @@ async def get_videos(db: AsyncSession, skip: int = 0, limit: int = 20, map_id: s
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
+
 
 async def get_video(db: AsyncSession, video_id: str):
     result = await db.execute(

@@ -54,6 +54,29 @@ async def get_user_profile(user_id: str, db: AsyncSession = Depends(get_db)) -> 
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng.")
     return user
 
+
+@router.delete("/{user_id}")
+async def admin_delete_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_admin: models.User = Depends(get_current_admin),
+) -> Any:
+    from sqlalchemy.future import select
+
+    result = await db.execute(select(models.User).filter(models.User.id == user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng.")
+
+    # Không cho admin tự xóa chính mình (tuỳ chọn)
+    if user.id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Không thể xóa chính mình.")
+
+    await db.delete(user)
+    await db.commit()
+    return {"message": "User deleted"}
+
+
 @router.put("/me/username", response_model=schemas.UserResponse)
 async def update_username(
     user_update: schemas.UserUpdate,

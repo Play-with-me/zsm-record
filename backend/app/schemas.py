@@ -15,6 +15,7 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: str
     role: RoleEnum
+    is_active: bool = True
     created_at: datetime
     last_username_update: Optional[datetime] = None
     last_avatar_update: Optional[datetime] = None
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
 class UserAdminUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
+    is_active: Optional[bool] = None
 
 # ----------------- Auth -----------------
 class Token(BaseModel):

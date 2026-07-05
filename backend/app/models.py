@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Enum
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Enum, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -25,6 +25,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     avatar = Column(String, nullable=True)
     role = Column(Enum(RoleEnum), default=RoleEnum.USER, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_username_update = Column(DateTime, nullable=True)
     last_avatar_update = Column(DateTime, nullable=True)

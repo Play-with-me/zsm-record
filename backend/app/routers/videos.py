@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from .. import crud, schemas, models
 from ..database import get_db
-from .auth import get_current_user, get_current_admin
+from .auth import get_current_user
+
+
+
+
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -25,20 +29,57 @@ async def read_videos(
     map_id: Optional[str] = None,
     car_id: Optional[str] = None,
     user_id: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user),
 ):
-    videos = await crud.get_videos(db, skip=skip, limit=limit, map_id=map_id, car_id=car_id, user_id=user_id)
+
+    # Nếu chưa login => chỉ public
+    if current_user is None or current_user.role != models.RoleEnum.ADMIN:
+        videos = await crud.get_videos(
+            db,
+            skip=skip,
+            limit=limit,
+            map_id=map_id,
+            car_id=car_id,
+            user_id=None,
+            visibility=models.VisibilityEnum.PUBLIC,
+        )
+        return videos
+
+    # Admin có thể xem cả public/private
+    videos = await crud.get_videos(
+        db,
+        skip=skip,
+        limit=limit,
+        map_id=map_id,
+        car_id=car_id,
+        user_id=user_id,
+        visibility=None,
+    )
     return videos
 
+
 @router.get("/{video_id}", response_model=schemas.VideoResponse)
-async def read_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def read_video(
+    video_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_current_user),
+):
     db_video = await crud.get_video(db, video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
+
+    # Private: chỉ owner hoặc admin
+    if db_video.visibility == models.VisibilityEnum.PRIVATE:
+        if current_user is None or (db_video.user_id != current_user.id and current_user.role != models.RoleEnum.ADMIN):
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+
     db_video.views += 1
     await db.commit()
     await db.refresh(db_video)
     return db_video
+
 
 @router.put("/{video_id}", response_model=schemas.VideoResponse)
 async def update_video(
