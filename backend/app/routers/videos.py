@@ -54,6 +54,8 @@ async def update_video(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     update_data = video_update.model_dump(exclude_none=True)
+    if "video_url" in update_data:
+        update_data["video_url"] = (update_data["video_url"] or "").strip()
     for key, value in update_data.items():
         setattr(db_video, key, value)
     

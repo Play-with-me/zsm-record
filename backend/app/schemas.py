@@ -83,19 +83,20 @@ class VideoBase(BaseModel):
     car_id: str
     pet_id: Optional[str] = None
     record_ms: int = Field(gt=0)
-    video_url: str
+    video_url: Optional[str] = None
     thumbnail: Optional[str] = None
     description: Optional[str] = None
     visibility: VisibilityEnum = VisibilityEnum.PUBLIC
 
 class VideoCreate(VideoBase):
-    pass
+    thumbnail: str = Field(min_length=1)
 
 class VideoUpdate(BaseModel):
     map_id: Optional[str] = None
     car_id: Optional[str] = None
     pet_id: Optional[str] = None
     record_ms: Optional[int] = Field(None, gt=0)
+    video_url: Optional[str] = None
     description: Optional[str] = None
     visibility: Optional[VisibilityEnum] = None
 
@@ -121,6 +122,7 @@ class RecordBoardEntry(BaseModel):
     pet: Optional[PetResponse]
     record_ms: int
     video_id: str
-    video_url: str
+    video_url: Optional[str] = None
+    thumbnail: Optional[str] = None
     class Config:
         from_attributes = True

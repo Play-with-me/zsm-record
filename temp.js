@@ -23,6 +23,10 @@ function parseRecord(str) {
   return 0;
 }
 function dateStr(d) { return new Date(d).toLocaleDateString('vi-VN'); }
+function proofImage(v) {
+  return v?.thumbnail || v?.map?.image || `https://placehold.co/600x338/0d0d22/fff?text=${encodeURIComponent(v?.map?.name||'Record')}`;
+}
+function cleanUrl(url) { return (url || '').trim(); }
 function getToken() { return localStorage.getItem('zsm_token'); }
 function setToken(t) { localStorage.setItem('zsm_token',t); }
 function clearToken() { localStorage.removeItem('zsm_token'); }
@@ -286,7 +290,7 @@ async function renderHome() {
 }
 
 function videoCard(v) {
-  const img=v.map?.image||`https://placehold.co/600x338/0d0d22/fff?text=${encodeURIComponent(v.map?.name||'Map')}`;
+  const img=proofImage(v);
   const canEdit = currentUser && (currentUser.id === v.user?.id || currentUser.role === 'ADMIN');
   return `<div class="card card-hover video-card" style="position:relative;">
     ${canEdit ? `<div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:6px">
@@ -296,7 +300,7 @@ function videoCard(v) {
       <img src="${esc(img)}" alt="${esc(v.map?.name)}" loading="lazy"/>
       <div class="overlay"></div>
       <div class="time-badge">${fmtMs(v.record_ms)}</div>
-      <div class="play-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+      <div class="play-btn" title="Xem chi tiết">&#128065;</div>
     </a>
     <div class="info">
       <div class="title">${esc(v.map?.name)}</div>
@@ -381,8 +385,12 @@ async function renderUpload() {
     <div class="card"><div class="card-body-lg">
     <form id="uf" style="display:flex;flex-direction:column;gap:18px;">
     <div class="form-group">
-        <label class="form-label">Video File *</label>
-        <input class="form-input" type="file" name="vfile" accept="video/mp4,video/webm" required />
+        <label class="form-label">Ảnh Kỷ Lục *</label>
+        <input class="form-input" type="file" name="vfile" accept="image/*" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link Video Youtube/Drive <span style="color:var(--text-dim)">(Tuỳ chọn)</span></label>
+        <input class="form-input" type="url" name="vurl" placeholder="https://youtube.com/... hoặc https://drive.google.com/..." />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="form-group"><label class="form-label">Bản đồ *</label>${mkCombobox('map',maps.map(m=>({label:m.name,value:m.id})),'Chọn bản đồ...')}</div>
@@ -416,28 +424,31 @@ async function renderUpload() {
     if(!mapId||!carId){toast('Vui lòng chọn Bản đồ và Xe','error');return;}
     const rec=e.target.rec.value;
     if(!/^\d+:\d{2}:\d{2}$/.test(rec)){toast('Định dạng thời gian phải là p:gg:cc (VD: 1:23:45)','error');return;}
+    const imageFile = e.target.vfile.files[0];
+    if(!imageFile || !imageFile.type.startsWith('image/')){toast('Vui lòng chọn ảnh kỷ lục hợp lệ','error');return;}
     const b=$('ub'); b.disabled=true; b.innerHTML='<span class="spinner"></span> Đang tải lên (1/2)...';
     try {
       // Bước 1: Upload trực tiếp lên Cloudinary
       const cfd = new FormData();
-      cfd.append('file', e.target.vfile.files[0]);
+      cfd.append('file', imageFile);
       cfd.append('upload_preset', 'zsm_preset');
       
-      const cres = await fetch('https://api.cloudinary.com/v1_1/ip5cfp9y/video/upload', {
+      const cres = await fetch('https://api.cloudinary.com/v1_1/ip5cfp9y/image/upload', {
         method: 'POST',
         body: cfd
       });
       if(!cres.ok) {
         const cerr = await cres.json();
-        throw new Error('Lỗi từ Cloudinary: ' + (cerr.error?.message || 'Không thể tải video'));
+        throw new Error('Lỗi từ Cloudinary: ' + (cerr.error?.message || 'Không thể tải ảnh'));
       }
       const cjson = await cres.json();
-      const videoUrl = cjson.secure_url;
+      const imageUrl = cjson.secure_url;
 
       // Bước 2: Bắn dữ liệu về Backend
       b.innerHTML='<span class="spinner"></span> Đang lưu kỷ lục (2/2)...';
       const payload = {
-        video_url: videoUrl,
+        thumbnail: imageUrl,
+        video_url: cleanUrl(e.target.vurl.value),
         map_id: mapId,
         car_id: carId,
         pet_id: $('cb-pet')?.dataset.value || null,
@@ -446,12 +457,11 @@ async function renderUpload() {
         visibility: e.target.vis.value
       };
       
-      const r = await apiFetch('/videos', {
+      await apiFetch('/videos', {
         method:'POST',
         body: JSON.stringify(payload)
       });
-      
-      if(!r.ok) throw new Error((await r.json()).detail||'Lỗi tải lên máy chủ');
+
       toast('Đăng record thành công!'); navigate('/');
     } catch(err){ 
       console.error(err);
@@ -508,7 +518,7 @@ async function loadBoard() {
       <td><span class="record-time" style="font-size:1.05rem">${fmtMs(e.record_ms)}</span></td>
       <td style="text-align:right; white-space:nowrap;">
         ${canEdit ? `<button class="btn-icon" style="color:var(--orange)" onclick="editRecord('${e.video_id}')" title="Sửa">&#9998;</button>` : ''}
-        <a href="#/video/${e.video_id}" class="btn-icon" title="Watch">&#9654;</a>
+        <a href="#/video/${e.video_id}" class="btn-icon" title="Xem chi tiết">&#128065;</a>
       </td>
     </tr>`}).join('');
   } catch { body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Tải bảng xếp hạng thất bại.</td></tr>'; }
@@ -519,21 +529,12 @@ async function renderVideo(id) {
   $('app').innerHTML=`<div class="animate-in"><div class="skeleton" style="aspect-ratio:16/9;border-radius:20px;margin-bottom:24px"></div><div class="skeleton" style="height:180px;border-radius:12px"></div></div>`;
   try {
     const video=await apiFetch(`/videos/${id}`);
-    let embed='';
-    try {
-      if (video.video_url.includes('localhost:8001/uploads')) {
-        embed = `<video src="${esc(video.video_url)}" controls style="width:100%;height:100%;background:#000;border-radius:20px;"></video>`;
-      } else {
-        const u=new URL(video.video_url); let vid='';
-        if(u.hostname.includes('youtu.be')) vid=u.pathname.slice(1);
-        else if(u.hostname.includes('youtube.com')) vid=u.searchParams.get('v');
-        if(vid) embed=`<iframe src="https://www.youtube.com/embed/${vid}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>`;
-      }
-    } catch {}
-    if(!embed) embed=`<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-dim)">
-      <div style="font-size:3rem">&#9654;</div><p>Không thể nhúng video này trực tiếp.</p>
-      <a href="${esc(video.video_url)}" target="_blank" rel="noopener" style="color:var(--blue-hover)">Mở liên kết &#8599;</a>
-    </div>`;
+    const proof=proofImage(video);
+    const videoLink=cleanUrl(video.video_url);
+    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" loading="eager"/>`;
+    const videoButton=videoLink
+      ? `<a href="${esc(videoLink)}" target="_blank" rel="noopener" class="btn btn-purple btn-sm" style="flex-shrink:0">Xem Video &#8599;</a>`
+      : '';
 
     let related='';
     try {
@@ -555,12 +556,15 @@ async function renderVideo(id) {
     const canDel=currentUser&&(currentUser.id===video.user_id||currentUser.role==='ADMIN');
 
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
-      <div class="video-player">${embed}</div>
+      <div class="video-player">${media}</div>
       <div class="detail-grid">
         <div style="display:flex;flex-direction:column;gap:18px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-            <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;line-height:1.2">${esc(video.map?.name)} — ${esc(video.car?.name)}</h1>
-            ${canDel?`<button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="confirmDelete('${video.id}','${esc(video.map?.name)} - ${esc(video.car?.name)}')">Xóa</button>`:''}
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;line-height:1.2;flex:1;min-width:min(260px,100%)">${esc(video.map?.name)} — ${esc(video.car?.name)}</h1>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+              ${videoButton}
+              ${canDel?`<button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="confirmDelete('${video.id}','${esc(video.map?.name)} - ${esc(video.car?.name)}')">Xóa</button>`:''}
+            </div>
           </div>
           <div class="info-bar">
             <div style="display:flex;align-items:center;gap:10px">
@@ -595,7 +599,7 @@ async function renderVideo(id) {
         </div>
       </div>
     </div>`;
-  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy video.</div>'; }
+  } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy record.</div>'; }
 }
 
 // ── PROFILE ───────────────────────────────────────────
@@ -845,6 +849,10 @@ window.editRecord = async function(id) {
           <div class="form-group"><label class="form-label">Pet</label>${mkCombobox('epet',pets.map(p=>({label:p.name,value:p.id})),'Không có pet', v.pet_id||'')}</div>
         </div>
         <div class="form-group">
+          <label class="form-label">Link Video Youtube/Drive <span style="color:var(--text-dim)">(Tùy chọn)</span></label>
+          <input class="form-input" type="url" name="vurl" value="${esc(v.video_url||'')}" placeholder="https://youtube.com/... hoặc https://drive.google.com/..." />
+        </div>
+        <div class="form-group">
           <label class="form-label">Quyền riêng tư</label>
           <select class="form-input" name="vis">
             <option value="PUBLIC" ${v.visibility==='PUBLIC'?'selected':''}>Công khai</option>
@@ -870,6 +878,7 @@ window.editRecord = async function(id) {
       const payload = {
         map_id: mapId, car_id: carId, pet_id: petId||null,
         record_ms: parseRecord(rec),
+        video_url: cleanUrl(e.target.vurl.value),
         description: e.target.desc.value, visibility: e.target.vis.value
       };
       try {

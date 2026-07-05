@@ -75,7 +75,10 @@ async def create_pet(db: AsyncSession, pet_in: schemas.PetCreate):
 from sqlalchemy.orm import selectinload
 
 async def create_video(db: AsyncSession, video: schemas.VideoCreate, user_id: str):
-    db_video = models.Video(**video.model_dump(), user_id=user_id)
+    v_dump = video.model_dump()
+    v_dump["video_url"] = (v_dump.get("video_url") or "").strip()
+    v_dump["thumbnail"] = v_dump["thumbnail"].strip()
+    db_video = models.Video(**v_dump, user_id=user_id)
     db.add(db_video)
     await db.commit()
     
@@ -151,6 +154,7 @@ async def get_record_board(db: AsyncSession, map_id: str = None, car_id: str = N
             "pet": video.pet,
             "record_ms": video.record_ms,
             "video_id": video.id,
-            "video_url": video.video_url
+            "video_url": video.video_url or "",
+            "thumbnail": video.thumbnail
         })
     return board
