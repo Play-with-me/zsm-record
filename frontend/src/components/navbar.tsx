@@ -28,7 +28,7 @@ export default function Navbar() {
     localStorage.removeItem("token");
     setUser(null);
     // Use full page reload to ensure auth state is cleared
-    window.location.reload();
+    // Token cleared, UI will react to auth state change
   };
 
   return (
