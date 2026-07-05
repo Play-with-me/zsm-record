@@ -173,14 +173,18 @@ async def reseed_maps():
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        try:
+        
+    try:
+        async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE maps ADD COLUMN difficulty INTEGER DEFAULT 1"))
-        except Exception:
-            pass
-        try:
+    except Exception:
+        pass
+
+    try:
+        async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
-        except Exception:
-            pass
+    except Exception:
+        pass
 
     try:
         await reseed_maps()
