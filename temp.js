@@ -6,6 +6,12 @@ const API = window.location.hostname === 'localhost' || window.location.hostname
 // ─── STATE ───────────────────────────────────────────
 let currentUser = null;
 let searchTimeout = null;
+const apiCache = new Map();
+const CACHE_TTL = 60000;
+const liteDevice = window.matchMedia('(max-width: 768px)').matches ||
+  (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
+  (navigator.deviceMemory && navigator.deviceMemory <= 4);
+if (liteDevice) document.documentElement.classList.add('perf-lite');
 
 // ─── UTILS ───────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -23,8 +29,16 @@ function parseRecord(str) {
   return 0;
 }
 function dateStr(d) { return new Date(d).toLocaleDateString('vi-VN'); }
-function proofImage(v) {
-  return v?.thumbnail || v?.map?.image || `https://placehold.co/600x338/0d0d22/fff?text=${encodeURIComponent(v?.map?.name||'Record')}`;
+function optimizedImage(url, width=900) {
+  if(!url) return '';
+  if(url.includes('res.cloudinary.com') && url.includes('/upload/') && !url.includes('/upload/f_auto')) {
+    return url.replace('/upload/', `/upload/f_auto,q_auto,c_limit,w_${width}/`);
+  }
+  return url;
+}
+function proofImage(v, width=900) {
+  const src = v?.thumbnail || v?.map?.image || `https://placehold.co/600x338/0d0d22/fff?text=${encodeURIComponent(v?.map?.name||'Record')}`;
+  return optimizedImage(src, width);
 }
 function cleanUrl(url) { return (url || '').trim(); }
 function getToken() { return localStorage.getItem('zsm_token'); }
@@ -39,6 +53,15 @@ async function apiFetch(path, opts={}) {
   if(!res.ok) { const e=await res.json().catch(()=>({detail:'Lỗi kết nối'})); throw new Error(e.detail||'Yêu cầu thất bại'); }
   return res.json();
 }
+async function cachedApiFetch(path, ttl=CACHE_TTL) {
+  const now = Date.now();
+  const cached = apiCache.get(path);
+  if(cached && now - cached.ts < ttl) return cached.data;
+  const data = await apiFetch(path);
+  apiCache.set(path, {ts: now, data});
+  return data;
+}
+function clearApiCache() { apiCache.clear(); }
 
 async function fetchUser() {
   try { if(!getToken()){currentUser=null;return;} currentUser=await apiFetch('/auth/me'); }
@@ -64,7 +87,7 @@ function renderNav() {
       <div class="user-menu" id="user-menu">
         <button class="user-trigger" onclick="toggleUserMenu()">
           ${currentUser.avatar 
-            ? `<img src="${esc(currentUser.avatar)}" class="avatar avatar-sm" style="object-fit:cover;"/>` 
+            ? `<img src="${esc(optimizedImage(currentUser.avatar, 64))}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover;"/>`
             : `<span class="avatar avatar-sm">${esc(currentUser.username[0].toUpperCase())}</span>`
           }
           <span class="uname">${esc(currentUser.username)}</span>
@@ -196,16 +219,18 @@ const skRows=n=>Array(n).fill('').map(()=>`<tr>${Array(6).fill('').map(()=>'<td>
 
 // ─── GLOBAL SEARCH ────────────────────────────────────
 async function onSearchInput(q) {
-  const sr=$('search-results'); if(!q.trim()){ sr.style.display='none'; return; }
+  const sr=$('search-results'), query=q.trim().toLowerCase();
   clearTimeout(searchTimeout);
+  if(query.length < 2){ sr.style.display='none'; return; }
   searchTimeout=setTimeout(async()=>{
     try {
-      const res=await apiFetch(`/videos?limit=6`);
+      const res=await cachedApiFetch('/videos?limit=50', 45000);
+      if((document.getElementById('global-search')?.value.trim().toLowerCase() || '') !== query) return;
       const fil=res.filter(v=>
-        v.map?.name?.toLowerCase().includes(q.toLowerCase())||
-        v.car?.name?.toLowerCase().includes(q.toLowerCase())||
-        v.user?.username?.toLowerCase().includes(q.toLowerCase())
-      );
+        v.map?.name?.toLowerCase().includes(query)||
+        v.car?.name?.toLowerCase().includes(query)||
+        v.user?.username?.toLowerCase().includes(query)
+      ).slice(0, 6);
       if(!fil.length){ sr.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:0.83rem">Không tìm thấy kết quả</div>'; }
       else {
         sr.innerHTML=fil.map(v=>`
@@ -242,6 +267,7 @@ function confirmDelete(videoId, title) {
 async function doDelete(id, overlay) {
   try {
     await apiFetch(`/videos/${id}`,{method:'DELETE'});
+    clearApiCache();
     overlay.remove(); toast('Đã xóa record thành công!'); navigate('/');
   } catch(e) { toast(e.message,'error'); }
 }
@@ -277,7 +303,7 @@ async function renderHome() {
 
   try {
     const [videos, maps, cars] = await Promise.all([
-      apiFetch('/videos?limit=8'), apiFetch('/maps'), apiFetch('/cars')
+      cachedApiFetch('/videos?limit=8', 30000), cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000)
     ]);
     $('hero-stats').innerHTML=`
       <div class="hero-stat"><div class="val">${videos.length < 8 ? videos.length : '8+'}</div><div class="lbl">Số Record</div></div>
@@ -290,14 +316,14 @@ async function renderHome() {
 }
 
 function videoCard(v) {
-  const img=proofImage(v);
+  const img=proofImage(v, 640);
   const canEdit = currentUser && (currentUser.id === v.user?.id || currentUser.role === 'ADMIN');
   return `<div class="card card-hover video-card" style="position:relative;">
     ${canEdit ? `<div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:6px">
       <button class="btn-icon" style="background:rgba(0,0,0,0.7);color:#fff;padding:5px;" onclick="editRecord('${v.id}')" title="Sửa">&#9998;</button>
     </div>` : ''}
     <a href="#/video/${v.id}" class="thumb">
-      <img src="${esc(img)}" alt="${esc(v.map?.name)}" loading="lazy"/>
+      <img src="${esc(img)}" alt="${esc(v.map?.name)}" width="640" height="360" loading="lazy" decoding="async"/>
       <div class="overlay"></div>
       <div class="time-badge">${fmtMs(v.record_ms)}</div>
       <div class="play-btn" title="Xem chi tiết">&#128065;</div>
@@ -327,7 +353,7 @@ function renderLogin() {
         <input class="form-input" type="password" name="p" placeholder="Nhập mật khẩu" required  style="padding-right:40px;"/>
         <button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;transition:color 0.2s;">&#128065;</button>
       </div></div>
-      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;" type="submit" id="lb">Đăng nhập</button>
+      <button class="btn btn-primary" type="submit" id="lb">Đăng nhập</button>
     </form>
     <div class="auth-foot">Chưa có tài khoản? <a href="#/register">Đăng ký tại đây</a></div>
   </div></div></div>`;
@@ -359,7 +385,7 @@ function renderRegister() {
         <input class="form-input" type="password" name="c" placeholder="Nhập lại mật khẩu" required  style="padding-right:40px;"/>
         <button type="button" onclick="const i=this.previousElementSibling; if(i.type==='password'){i.type='text';this.innerHTML='&#128064;'}else{i.type='password';this.innerHTML='&#128065;'}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;transition:color 0.2s;">&#128065;</button>
       </div></div>
-      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;" type="submit" id="rb">Tạo tài khoản</button>
+      <button class="btn btn-primary" type="submit" id="rb">Tạo tài khoản</button>
     </form>
     <div class="auth-foot">Đã là thành viên? <a href="#/login">Đăng nhập tại đây</a></div>
   </div></div></div>`;
@@ -378,7 +404,7 @@ function renderRegister() {
 async function renderUpload() {
   if(!getToken()){ toast('Vui lòng đăng nhập trước','error'); navigate('/login'); return; }
   $('app').innerHTML=`<div class="animate-in" style="max-width:680px;margin:0 auto">${skCards(1)}</div>`;
-  const [maps,cars,pets]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets')]);
+  const [maps,cars,pets]=await Promise.all([cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000), cachedApiFetch('/pets', 300000)]);
   $('app').innerHTML=`<div class="animate-in" style="max-width:680px;margin:0 auto;">
     <h1 style="font-size:1.7rem;font-weight:800;margin-bottom:6px">&#9650; Đăng Record</h1>
     <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:22px">Chia sẻ kỷ lục đỉnh cao của bạn với cộng đồng.</p>
@@ -414,7 +440,7 @@ async function renderUpload() {
         <label class="form-label">Mô tả <span style="color:var(--text-dim)">(Tùy chọn)</span></label>
         <textarea class="form-input" name="desc" placeholder="Bạn có mẹo chạy, cấu hình xe nào muốn chia sẻ không?"></textarea>
       </div>
-      <button class="btn btn-primary" style="animation: pulseGlow 2s infinite;padding:12px" type="submit" id="ub">&#9650; Tải lên Record</button>
+      <button class="btn btn-primary" style="padding:12px" type="submit" id="ub">&#9650; Tải lên Record</button>
     </form>
     </div></div>
   </div>`;
@@ -462,6 +488,7 @@ async function renderUpload() {
         body: JSON.stringify(payload)
       });
 
+      clearApiCache();
       toast('Đăng record thành công!'); navigate('/');
     } catch(err){ 
       console.error(err);
@@ -485,7 +512,7 @@ async function renderBoard() {
     </tr></thead><tbody id="board-body">${skRows(5)}</tbody></table></div>
   </div>`;
 
-  const [maps,cars,pets]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets')]);
+  const [maps,cars,pets]=await Promise.all([cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000), cachedApiFetch('/pets', 300000)]);
   $('app').querySelector('.skeleton').outerHTML=`<div class="filter-bar">
     <h2>Lọc Dữ Liệu</h2>
     <div class="filter-grid">
@@ -506,7 +533,7 @@ async function loadBoard() {
   const m=$('cb-bmap')?.dataset.value, c=$('cb-bcar')?.dataset.value, p=$('cb-bpet')?.dataset.value;
   if(m) params.append('map_id',m); if(c) params.append('car_id',c); if(p) params.append('pet_id',p);
   try {
-    const board=await apiFetch(`/record-board?${params}`);
+    const board=await cachedApiFetch(`/record-board?${params}`, 15000);
     if(!board.length){ body.innerHTML='<tr><td colspan="6"><div class="empty">Chưa có dữ liệu cho bộ lọc này.</div></td></tr>'; return; }
     body.innerHTML=board.map(e=>{
       const canEdit = currentUser && (currentUser.id === e.player.id || currentUser.role === 'ADMIN');
@@ -529,16 +556,16 @@ async function renderVideo(id) {
   $('app').innerHTML=`<div class="animate-in"><div class="skeleton" style="aspect-ratio:16/9;border-radius:20px;margin-bottom:24px"></div><div class="skeleton" style="height:180px;border-radius:12px"></div></div>`;
   try {
     const video=await apiFetch(`/videos/${id}`);
-    const proof=proofImage(video);
+    const proof=proofImage(video, 1400);
     const videoLink=cleanUrl(video.video_url);
-    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" loading="eager"/>`;
+    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" width="1400" height="788" loading="eager" decoding="async" fetchpriority="high"/>`;
     const videoButton=videoLink
       ? `<a href="${esc(videoLink)}" target="_blank" rel="noopener" class="btn btn-purple btn-sm" style="flex-shrink:0">Xem Video &#8599;</a>`
       : '';
 
     let related='';
     try {
-      const rel=await apiFetch(`/videos?map_id=${video.map_id}&car_id=${video.car_id}&limit=6`);
+      const rel=await cachedApiFetch(`/videos?map_id=${video.map_id}&car_id=${video.car_id}&limit=6`, 30000);
       const fil=rel.filter(r=>r.id!==id);
       if(fil.length) related=`<div>
         <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Kỷ Lục Tương Tự</div>
@@ -621,6 +648,7 @@ window.editProfile = async function(field) {
         });
         if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi cập nhật avatar');
         toast('Cập nhật Avatar thành công!');
+        clearApiCache();
         await fetchUser(); renderProfile(currentUser.id); renderNav();
       } catch(err) { toast(err.message, 'error'); b.innerHTML = 'Đổi ảnh'; }
     };
@@ -636,6 +664,7 @@ window.editProfile = async function(field) {
       });
       if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi cập nhật tên');
       toast('Cập nhật tên thành công!');
+      clearApiCache();
       await fetchUser(); renderProfile(currentUser.id); renderNav();
     } catch(err) { toast(err.message, 'error'); }
   }
@@ -671,7 +700,7 @@ async function renderProfile(userId) {
       <div class="profile-header">
         <div style="position:relative; display:inline-block;">
           ${user.avatar 
-            ? `<img src="${esc(user.avatar)}" class="avatar avatar-lg" style="object-fit:cover; border:2px solid var(--border);" />` 
+            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="80" height="80" loading="eager" decoding="async" style="object-fit:cover; border:2px solid var(--border);" />`
             : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
           }
           ${isOwner ? `<button id="avatar-edit-btn" onclick="editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
@@ -703,7 +732,7 @@ async function renderAdmin() {
   let tab='maps';
 
   async function renderTab() {
-    const [maps,cars,pets,users]=await Promise.all([apiFetch('/maps'),apiFetch('/cars'),apiFetch('/pets'),apiFetch('/users')]);
+    const [maps,cars,pets,users]=await Promise.all([cachedApiFetch('/maps', 300000),cachedApiFetch('/cars', 300000),cachedApiFetch('/pets', 300000),apiFetch('/users')]);
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:20px;">
       <div><h1 style="font-size:1.7rem;font-weight:800">&#128736; Bảng Quản Trị</h1><p style="color:var(--text-muted);font-size:0.85rem">Quản lý dữ liệu hệ thống.</p></div>
       <div><div class="tabs">
@@ -750,7 +779,7 @@ async function renderAdmin() {
       tab==='users'?`
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Mã ID</th><th>Hành động</th></tr></thead>
         <tbody>${users.map(u=>`<tr>
-          <td>${u.avatar?`<img src="${esc(u.avatar)}" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>`:`<div class="avatar avatar-sm">${esc(u.username[0].toUpperCase())}</div>`}</td>
+          <td>${u.avatar?`<img src="${esc(optimizedImage(u.avatar, 48))}" width="28" height="28" loading="lazy" decoding="async" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>`:`<div class="avatar avatar-sm">${esc(u.username[0].toUpperCase())}</div>`}</td>
           <td style="font-weight:600">${esc(u.username)}</td>
           <td style="color:var(--text-dim)">${esc(u.email)}</td>
           <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
@@ -774,6 +803,7 @@ async function renderAdmin() {
         const n=$('pn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
         await apiFetch('/admin/pets',{method:'POST',body:JSON.stringify({name:n})});
       }
+      clearApiCache();
       toast('Đã thêm thành công!'); renderTab();
     } catch(e){ toast(e.message,'error'); }
   };
@@ -831,7 +861,7 @@ window.adminEditUser = function(id, curName, curEmail) {
 window.editRecord = async function(id) {
   try {
     const v = await apiFetch(`/videos/${id}`);
-    const [maps, cars, pets] = await Promise.all([apiFetch('/maps'), apiFetch('/cars'), apiFetch('/pets')]);
+    const [maps, cars, pets] = await Promise.all([cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000), cachedApiFetch('/pets', 300000)]);
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `<div class="modal" style="max-width:500px">
@@ -883,6 +913,7 @@ window.editRecord = async function(id) {
       };
       try {
         await apiFetch(`/videos/${id}`, {method:'PUT', body:JSON.stringify(payload)});
+        clearApiCache();
         overlay.remove(); toast('Đã cập nhật record!');
         if(window.location.hash.includes('board')) loadBoard(); else if(window.location.hash.includes('profile')) renderProfile(window.location.hash.split('/')[2]); else { renderHome(); }
       } catch(err){ toast(err.message, 'error'); }
