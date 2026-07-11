@@ -19,6 +19,7 @@ class UserResponse(UserBase):
     created_at: datetime
     last_username_update: Optional[datetime] = None
     last_avatar_update: Optional[datetime] = None
+    avatar_update_count: int = 0
     class Config:
         from_attributes = True
 

@@ -111,12 +111,19 @@ async def update_avatar(
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ) -> Any:
-    # Check 1-day cooldown
+    # Check 5-times per day cooldown
     if current_user.last_avatar_update:
         delta = datetime.utcnow() - current_user.last_avatar_update
         if delta.total_seconds() < 86400:
-            hours_left = 24 - int(delta.total_seconds() // 3600)
-            raise HTTPException(status_code=400, detail=f"Bạn chỉ được đổi ảnh đại diện 1 lần mỗi ngày. Vui lòng thử lại sau {hours_left} giờ.")
+            if current_user.avatar_update_count >= 5:
+                hours_left = 24 - int(delta.total_seconds() // 3600)
+                raise HTTPException(status_code=400, detail=f"Bạn đã hết lượt đổi ảnh (tối đa 5 lần/ngày). Vui lòng thử lại sau {hours_left} giờ.")
+            else:
+                current_user.avatar_update_count += 1
+        else:
+            current_user.avatar_update_count = 1
+    else:
+        current_user.avatar_update_count = 1
 
     if not avatar_file.content_type or not avatar_file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File tải lên phải là hình ảnh hợp lệ.")

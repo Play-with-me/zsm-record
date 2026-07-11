@@ -837,7 +837,7 @@ async function renderProfile(userId) {
       if (currentUser.last_avatar_update) {
         const d = new Date(currentUser.last_avatar_update + (currentUser.last_avatar_update.endsWith('Z') ? '' : 'Z'));
         const diff = Date.now() - d.getTime();
-        if (diff < 86400000) {
+        if (diff < 86400000 && currentUser.avatar_update_count >= 5) {
            let h = Math.ceil((86400000 - diff) / 3600000);
            if (h > 24) h = 24;
            if (h < 1) h = 1;

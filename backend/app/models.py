@@ -29,6 +29,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_username_update = Column(DateTime, nullable=True)
     last_avatar_update = Column(DateTime, nullable=True)
+    avatar_update_count = Column(Integer, default=0)
 
     videos = relationship("Video", back_populates="user")
     comments = relationship("Comment", back_populates="user")
