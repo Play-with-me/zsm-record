@@ -895,6 +895,21 @@ async function renderProfile(userId) {
       const publicVideos = videos.filter(v => v.visibility === 'PUBLIC');
     
     
+    // Gamification Logic
+    const exp = user.exp || 0;
+    const level = Math.floor(Math.sqrt(exp / 100)) + 1;
+    const currentLevelExp = Math.pow(level - 1, 2) * 100;
+    const nextLevelExp = Math.pow(level, 2) * 100;
+    const progress = ((exp - currentLevelExp) / (nextLevelExp - currentLevelExp)) * 100;
+
+    let petName = 'Trứng Gà';
+    let petEmoji = '🥚';
+    let pColor = '#ccc';
+    if (level >= 20) { petName = 'Rồng Thần'; petEmoji = '🐉'; pColor = 'var(--neon-pink)'; }
+    else if (level >= 10) { petName = 'Tiểu Long'; petEmoji = '🦎'; pColor = 'var(--neon-blue)'; }
+    else if (level >= 5) { petName = 'Gà Chọi'; petEmoji = '🐓'; pColor = '#ffeb3b'; }
+    else if (level >= 2) { petName = 'Gà Con'; petEmoji = '🐥'; pColor = '#4caf50'; }
+
     let badgeHtml = '';
     if (user.role === 'ADMIN') badgeHtml = `<span class="badge-label badge-boss" title="Quản trị viên">Boss</span>`;
     else if (publicVideos.length >= 15) badgeHtml = `<span class="badge-label badge-monster" title="Trên 15 kỷ lục">Quái Vật Drift</span>`;
@@ -923,20 +938,30 @@ async function renderProfile(userId) {
     }
 
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
-      <div class="profile-header">
-        <div style="position:relative; display:inline-block;${user.avatar ? ' cursor:pointer;' : ''}" ${user.avatar ? `onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')"` : ''}>
+      <div class="profile-header" style="display:flex; gap:24px; align-items:center; flex-wrap:wrap; background:var(--card-bg); padding:24px; border-radius:var(--radius-lg); border:1px solid rgba(255,255,255,0.05); box-shadow:var(--shadow-lg);">
+        <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:8px;${user.avatar ? ' cursor:pointer;' : ''}" ${user.avatar ? `onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')"` : ''}>
           ${user.avatar 
-            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="80" height="80" loading="eager" decoding="async" style="object-fit:cover; border:2px solid var(--border);" />`
-            : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
+            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="100" height="100" loading="eager" decoding="async" style="object-fit:cover; border:3px solid ${pColor}; box-shadow:0 0 15px ${pColor};" />`
+            : `<div style="width:100px;height:100px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:700;color:${pColor};border:3px solid ${pColor};box-shadow:0 0 15px ${pColor}">${esc(user.username[0].toUpperCase())}</div>`
           }
-          ${isOwner ? `<button id="avatar-edit-btn" onclick="event.stopPropagation(); editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
+          <div style="text-align:center; font-size:1.5rem;" title="${petName}">${petEmoji} <span style="font-size:0.8rem; color:var(--text-secondary); display:block; font-weight:bold;">Lv.${level}</span></div>
+          ${isOwner ? `<button id="avatar-edit-btn" onclick="event.stopPropagation(); editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:35px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
         </div>
-        <div class="profile-info">
+        <div class="profile-info" style="flex:1;">
           <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            ${esc(user.username)} ${badgeHtml}
-            ${isOwner ? `<button onclick="editProfile('username')" class="btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" title="Đổi tên ${nameWait}">&#9998;</button>` : ''}
+            <span ${isOwner ? `style="cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.3)" onclick="triggerFieldEdit('username')" title="Nhấp để đổi tên ${nameWait}"` : ''}>${esc(user.username)}</span>
+            ${badgeHtml}
           </h2>
-          <p>${isOwner ? 'Hồ sơ của bạn' : 'Tay đua cộng đồng'}</p>
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-secondary);margin-bottom:4px;">
+              <span>EXP: ${exp}</span>
+              <span>Tiếp theo: ${nextLevelExp}</span>
+            </div>
+            <div style="width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+              <div style="width:${progress}%;height:100%;background:linear-gradient(90deg, var(--neon-pink), ${pColor});border-radius:4px;transition:width 1s ease-in-out;"></div>
+            </div>
+          </div>
+          <p style="margin-bottom:12px;">${isOwner ? 'Hồ sơ của bạn' : 'Tay đua cộng đồng'}</p>
           <div class="profile-stats">
             <div class="profile-stat"><div class="val">${publicVideos.length}</div><div class="lbl">Số Record</div></div>
             <div class="profile-stat"><div class="val">${publicVideos.reduce((a,v)=>a+(v.views||0),0)}</div><div class="lbl">Tổng lượt xem</div></div>
@@ -1314,3 +1339,76 @@ window.doDelComment = async function(videoId, commentId, overlay) {
         toast('Lỗi xóa bình luận: ' + e.message, 'error');
     }
 }
+
+// Notifications logic
+let notifsData = [];
+let notifPollInterval = null;
+
+async function fetchNotifications() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`${API}/users/me/notifications`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if (res.ok) {
+      notifsData = await res.json();
+      updateNotifBadge();
+    }
+  } catch(e) { console.error(e); }
+}
+
+function updateNotifBadge() {
+  const badge = $('notif-badge');
+  if (!badge) return;
+  const unreadCount = notifsData.filter(n => !n.is_read).length;
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount;
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+window.toggleNotifications = async function() {
+  const dropdown = $('notif-dropdown');
+  if (dropdown.style.display === 'none') {
+    dropdown.style.display = 'block';
+    if (notifsData.length === 0) {
+      dropdown.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-secondary);">Không có thông báo nào.</div>';
+    } else {
+      dropdown.innerHTML = notifsData.map(n => `
+        <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.05);background:${n.is_read?'transparent':'rgba(255,107,158,0.1)'};border-radius:4px;margin-bottom:4px;">
+          ${esc(n.message)}
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px;">${dateStr(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+    
+    // Mark as read
+    const unread = notifsData.some(n => !n.is_read);
+    if (unread) {
+      try {
+        await fetch(`${API}/users/me/notifications/read`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        notifsData.forEach(n => n.is_read = true);
+        updateNotifBadge();
+      } catch(e) {}
+    }
+  } else {
+    dropdown.style.display = 'none';
+  }
+};
+
+document.addEventListener('click', (e) => {
+  const dropdown = $('notif-dropdown');
+  if (dropdown && dropdown.style.display === 'block' && !e.target.closest('.nav-icon')) {
+    dropdown.style.display = 'none';
+  }
+});
+
+// Start polling
+setInterval(() => {
+  if (currentUser) fetchNotifications();
+}, 30000);

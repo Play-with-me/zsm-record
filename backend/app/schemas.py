@@ -8,6 +8,7 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     avatar: Optional[str] = None
+    exp: int = 0
 
 class UserCreate(UserBase):
     password: str
