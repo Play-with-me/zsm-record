@@ -30,9 +30,35 @@ class User(Base):
     last_username_update = Column(DateTime, nullable=True)
     last_avatar_update = Column(DateTime, nullable=True)
     avatar_update_count = Column(Integer, default=0)
+    exp = Column(Integer, default=0)
 
     videos = relationship("Video", back_populates="user")
     comments = relationship("Comment", back_populates="user")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    message = Column(String, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="notifications")
+
+class Tournament(Base):
+    __tablename__ = "tournaments"
+
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    map_id = Column(String, ForeignKey("maps.id"), nullable=False)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    map = relationship("Map")
 
 class Map(Base):
     __tablename__ = "maps"

@@ -80,6 +80,9 @@ async def create_video(db: AsyncSession, video: schemas.VideoCreate, user_id: st
     v_dump["thumbnail"] = v_dump["thumbnail"].strip()
     db_video = models.Video(**v_dump, user_id=user_id)
     db.add(db_video)
+    user = await db.get(models.User, user_id)
+    if user:
+        user.exp += 50
     await db.commit()
     
     # Eager load relationships for response

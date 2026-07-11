@@ -121,6 +121,18 @@ async def like_video(
         raise HTTPException(status_code=404, detail="Video not found")
         
     db_video.likes += 1
+    
+    # Add EXP and Notification to video owner
+    if current_user and current_user.id != db_video.user_id:
+        owner = await db.get(models.User, db_video.user_id)
+        if owner:
+            owner.exp += 10
+            notif = models.Notification(
+                user_id=owner.id,
+                message=f"{current_user.username} đã thích kỷ lục của bạn!"
+            )
+            db.add(notif)
+            
     await db.commit()
     return {"message": "Liked successfully", "likes": db_video.likes}
 
