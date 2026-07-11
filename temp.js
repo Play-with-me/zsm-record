@@ -853,7 +853,7 @@ async function renderProfile(userId) {
 
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
       <div class="profile-header">
-        <div style="position:relative; display:inline-block;" ${user.avatar ? `cursor:pointer;" onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')` : '"'}>
+        <div style="position:relative; display:inline-block;${user.avatar ? ' cursor:pointer;' : ''}" ${user.avatar ? `onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')"` : ''}>
           ${user.avatar 
             ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="80" height="80" loading="eager" decoding="async" style="object-fit:cover; border:2px solid var(--border);" />`
             : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
