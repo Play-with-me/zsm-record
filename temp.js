@@ -1077,13 +1077,30 @@ async function renderAdmin() {
           <td style="color:var(--text-dim)">${esc(u.email)}</td>
           <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
           <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
-          <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button></td>
+          <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
         </tr>`).join('')}</tbody>
         </table></div>`:''}
     </div>`;
   }
 
-  window.adminTab=(t)=>{ tab=t; renderTab(); };
+  
+      if(tab==='tournaments'){
+        apiFetch('/record-board/tournaments').then(tList=>{
+          if(tList && tList.length){
+            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Map</th><th>Bắt đầu</th><th>Kết thúc</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${esc(maps.find(m=>m.id===t.map_id)?.name||t.map_id)}</td><td>${dateStr(t.start_time)}</td><td>${dateStr(t.end_time)}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
+            const el = document.getElementById('admin-t-list');
+            if(el) el.innerHTML = html;
+          }else{
+            const el = document.getElementById('admin-t-list');
+            if(el) el.innerHTML = '<div class="empty">Chưa có giải đấu nào.</div>';
+          }
+        }).catch(e=>{
+            const el = document.getElementById('admin-t-list');
+            if(el) el.innerHTML = 'Lỗi tải: ' + e.message;
+        });
+      }
+
+    window.adminTab=(t)=>{ tab=t; renderTab(); };
   
 // --- ADMIN CRUD LOGIC ---
 window.adminDelete = async function(type, id, name) {
