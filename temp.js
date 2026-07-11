@@ -607,7 +607,7 @@ async function loadBoard() {
       const canEdit = currentUser && (currentUser.id === e.player.id || currentUser.role === 'ADMIN');
       return `<tr>
       <td style="text-align:center">${e.rank<=3?`<span class="rank-badge rank-${e.rank}">${e.rank}</span>`:`<span style="color:var(--text-dim);font-family:monospace;font-size:0.85rem">${e.rank}</span>`}</td>
-      <td><div style="display:flex;align-items:center;gap:10px"><span class="avatar avatar-sm">${esc(e.player.username[0].toUpperCase())}</span><span style="font-weight:600">${esc(e.player.username)}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:10px;${e.player.avatar ? 'cursor:pointer;' : ''}" ${e.player.avatar ? `onclick="viewAvatar('${esc(optimizedImage(e.player.avatar, 600))}')"` : ''}>${e.player.avatar ? `<img src="${esc(optimizedImage(e.player.avatar, 40))}" class="avatar avatar-sm" style="object-fit:cover" />` : `<span class="avatar avatar-sm">${esc(e.player.username[0].toUpperCase())}</span>`}<span style="font-weight:600">${esc(e.player.username)}</span></div></td>
       <td><span class="badge badge-blue">${esc(e.car.name)}</span></td>
       <td>${e.pet?.name&&e.pet.name!=='None'?`<span class="badge badge-purple">${esc(e.pet.name)}</span>`:'<span style="color:var(--text-dim)">—</span>'}</td>
       <td><span class="record-time" style="font-size:1.05rem">${fmtMs(e.record_ms)}</span></td>
@@ -667,7 +667,7 @@ async function renderVideo(id) {
           </div>
           <div class="info-bar" style="background:rgba(255,255,255,0.03); padding:10px 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex;align-items:center;gap:10px">
-              <span class="avatar avatar-md" style="box-shadow:var(--neon-glow-purple); border:1px solid var(--neon-purple);">${esc(video.user?.username[0].toUpperCase())}</span>
+              ${video.user?.avatar ? `<img src="${esc(optimizedImage(video.user.avatar, 80))}" class="avatar avatar-md" style="object-fit:cover; box-shadow:var(--neon-glow-purple); border:1px solid var(--neon-purple); cursor:pointer;" onclick="viewAvatar('${esc(optimizedImage(video.user.avatar, 600))}')" />` : `<span class="avatar avatar-md" style="box-shadow:var(--neon-glow-purple); border:1px solid var(--neon-purple);">${esc(video.user?.username[0].toUpperCase())}</span>`}
               <div><div style="font-size:0.72rem;color:var(--text-dim)">Người đăng</div><div style="font-weight:700;font-size:0.9rem; color:var(--neon-cyan);">${esc(video.user?.username)}</div></div>
             </div>
             <div style="display:flex;align-items:center;gap:16px;">
