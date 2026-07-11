@@ -626,7 +626,7 @@ async function renderVideo(id) {
     const video=await apiFetch(`/videos/${id}`);
     const proof=proofImage(video, 1400);
     const videoLink=cleanUrl(video.video_url);
-    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" width="1400" height="788" loading="eager" decoding="async" fetchpriority="high"/>`;
+    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" width="1400" height="788" loading="eager" decoding="async" fetchpriority="high" style="width:100%;height:auto;max-height:80vh;object-fit:cover;border-radius:12px;border:1px solid var(--neon-purple);box-shadow:0 0 20px rgba(188,19,254,0.15)"/>`;
     const videoButton=videoLink
       ? `<a href="${esc(videoLink)}" target="_blank" rel="noopener" class="btn btn-purple btn-sm" style="flex-shrink:0">Xem Video &#8599;</a>`
       : '';
@@ -674,12 +674,12 @@ async function renderVideo(id) {
               <span class="info-stat">&#128197; ${dateStr(video.created_at)}</span>
               <span class="info-stat">&#128065; <span class="count-up" data-val="${video.views||0}">0</span></span>
               <div style="position:relative; display:inline-block;">
-                <button onclick="likeVideo('${video.id}')" class="btn btn-sm btn-outline" style="border-color:var(--neon-pink); color:var(--neon-pink); display:flex; align-items:center; gap:6px;">
-                  &#128077; <span id="like-count" class="count-up" data-val="${video.likes||0}">0</span>
+                <button onclick="toggleLike(this, '${video.id}')" class="btn btn-sm ${localStorage.getItem('liked_'+video.id) ? 'btn-purple' : 'btn-outline'}" style="border-color:var(--neon-pink); color:${localStorage.getItem('liked_'+video.id)?'white':'var(--neon-pink)'}; display:flex; align-items:center; gap:6px;">
+                  ${localStorage.getItem('liked_'+video.id) ? '&#10084;' : '&#128077;'} <span id="like-count" class="count-up" data-val="${video.likes||0}">${video.likes||0}</span>
                 </button>
                 <div id="like-floating" style="position:absolute; top:0; left:50%; transform:translateX(-50%); pointer-events:none;"></div>
               </div>
-              <button onclick="copyLink()" class="btn btn-sm btn-outline" style="border-color:var(--neon-cyan); color:var(--neon-cyan);" title="Copy Link">&#128279; Share</button>
+              <button onclick="shareVideo('${video.id}')" class="btn btn-sm btn-outline" style="border-color:var(--neon-cyan); color:var(--neon-cyan);" title="Copy Link">&#128279; Share</button>
             </div>
           </div>
           <div class="card"><div class="card-body">
@@ -737,7 +737,7 @@ async function loadComments(videoId) {
     }
     
     list.innerHTML = comments.map(c => `
-      <div style="display:flex;gap:12px;padding:12px;background:var(--bg-input);border-radius:8px;">
+      <div id="comment-${c.id}" style="display:flex;gap:12px;padding:12px;background:var(--bg-input);border-radius:8px;position:relative;">
         ${c.user.avatar ? `<img src="${esc(optimizedImage(c.user.avatar, 64))}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"/>` : `<div style="width:36px;height:36px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:bold">${esc(c.user.username[0].toUpperCase())}</div>`}
         <div style="flex:1">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
@@ -746,6 +746,7 @@ async function loadComments(videoId) {
           </div>
           <div style="font-size:0.85rem;color:var(--text);white-space:pre-wrap;">${esc(c.content)}</div>
         </div>
+        ${(currentUser && (currentUser.id === c.user_id || currentUser.role === 'ADMIN')) ? `<button onclick="delComment('${videoId}', '${c.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;position:absolute;top:10px;right:10px;font-size:1.1rem" title="Xóa">&#128465;</button>` : ''}
       </div>
     `).join('');
   } catch (e) {
@@ -1127,7 +1128,7 @@ window.viewAvatar = function(url) {
   overlay.style.zIndex = '10000';
   overlay.innerHTML = `
     <span class="btn-close-modal" style="position:fixed; top:20px; right:20px; font-size:2.5rem; color:#fff; cursor:pointer;" onclick="this.parentElement.remove()">&times;</span>
-    <img src="${url}" style="max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.8);" />
+    <img src="${url}" style="max-width:90vw; max-height:90vh; object-fit:cover;width:100%;height:100%; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.8);" />
   `;
   overlay.onclick = (e) => {
     if(e.target === overlay) overlay.remove();
@@ -1173,4 +1174,59 @@ window.showQuickView = async function(id) {
 
 window.closeQuickView = function() {
     $('quick-view-modal').classList.remove('active');
+}
+
+
+window.toggleLike = async function(btn, videoId) {
+    const isLiked = localStorage.getItem('liked_' + videoId);
+    try {
+        const countSpan = document.getElementById('like-count');
+        let currentLikes = countSpan ? parseInt(countSpan.innerText) : 0;
+        if (isLiked) {
+            await apiFetch(`/videos/${videoId}/unlike`, {method: 'POST'});
+            localStorage.removeItem('liked_' + videoId);
+            currentLikes = Math.max(0, currentLikes - 1);
+            btn.innerHTML = `&#128077; <span id="like-count" class="count-up" data-val="${currentLikes}">${currentLikes}</span>`;
+            btn.classList.remove('btn-purple');
+            btn.classList.add('btn-outline');
+            btn.style.color = 'var(--neon-pink)';
+        } else {
+            await apiFetch(`/videos/${videoId}/like`, {method: 'POST'});
+            localStorage.setItem('liked_' + videoId, 'true');
+            currentLikes += 1;
+            btn.innerHTML = `&#10084; <span id="like-count" class="count-up" data-val="${currentLikes}">${currentLikes}</span>`;
+            btn.classList.remove('btn-outline');
+            btn.classList.add('btn-purple');
+            btn.style.color = 'white';
+            
+            const floating = document.getElementById('like-floating');
+            if(floating) {
+                floating.innerHTML = '<span style="font-size:1.5rem;color:var(--neon-pink);display:inline-block;animation:floatUp 0.8s ease-out forwards">&#10084;</span>';
+                setTimeout(() => floating.innerHTML='', 800);
+            }
+        }
+    } catch(e) {
+        toast('Lỗi: ' + e.message, 'error');
+    }
+}
+
+window.shareVideo = function(videoId) {
+    const url = window.location.origin + window.location.pathname + '#/video/' + videoId;
+    navigator.clipboard.writeText(url).then(() => {
+        toast('Đã sao chép liên kết video!');
+    }).catch(err => {
+        toast('Không thể sao chép liên kết!', 'error');
+    });
+}
+
+window.delComment = async function(videoId, commentId) {
+    if(!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+    try {
+        await apiFetch(`/videos/${videoId}/comments/${commentId}`, {method: 'DELETE'});
+        toast('Đã xóa bình luận!');
+        const el = document.getElementById('comment-' + commentId);
+        if(el) el.remove();
+    } catch(e) {
+        toast('Lỗi xóa bình luận: ' + e.message, 'error');
+    }
 }

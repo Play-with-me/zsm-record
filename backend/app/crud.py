@@ -257,3 +257,14 @@ async def create_comment(db: AsyncSession, comment: schemas.CommentCreate, video
         .filter(models.Comment.id == db_comment.id)
     )
     return result.scalars().first()
+
+
+async def get_comment(db: AsyncSession, comment_id: str):
+    result = await db.execute(
+        select(models.Comment).filter(models.Comment.id == comment_id)
+    )
+    return result.scalars().first()
+
+async def delete_comment(db: AsyncSession, comment: models.Comment):
+    await db.delete(comment)
+    await db.commit()
