@@ -189,7 +189,7 @@ async def get_my_notifications(
         .limit(20)
     )
     notifs = result.scalars().all()
-    return notifs
+    return [{"id": n.id, "message": n.message, "is_read": n.is_read, "created_at": n.created_at} for n in notifs]
 
 @router.put("/me/notifications/read")
 async def mark_notifications_read(
