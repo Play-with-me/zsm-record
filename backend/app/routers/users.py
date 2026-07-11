@@ -154,19 +154,13 @@ async def update_avatar(
             pass
 
     if not image_url:
-        # Local fallback
+        import base64
+        import mimetypes
+        # Local fallback to base64
         filename_orig = avatar_file.filename if avatar_file.filename else "image.jpg"
-        file_ext = os.path.splitext(filename_orig)[1]
-        filename = f"avatar_{current_user.id}_{uuid.uuid4().hex[:8]}{file_ext}"
-        
-        uploads_dir = os.path.join(os.getcwd(), "uploads")
-        os.makedirs(uploads_dir, exist_ok=True)
-        filepath = os.path.join(uploads_dir, filename)
-        
-        with open(filepath, "wb") as f:
-            f.write(file_content)
-            
-        image_url = f"/uploads/{filename}"
+        mime_type = mimetypes.guess_type(filename_orig)[0] or "image/jpeg"
+        b64 = base64.b64encode(file_content).decode("utf-8")
+        image_url = f"data:{mime_type};base64,{b64}"
 
     current_user.avatar = image_url
     current_user.last_avatar_update = datetime.utcnow()
