@@ -1057,7 +1057,7 @@ async function renderAdmin() {
           </div>
         </div></div>
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Phân khúc</th><th>Mã ID</th><th>Hành động</th></tr></thead>
-        <tbody>${cars.map(c=>`<tr><td style="font-weight:600">${esc(c.name)}</td><td><span class="badge badge-orange">${esc(c.car_class||'?')}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${c.id}</td></tr>`).join('')}</tbody>
+        <tbody>${cars.map(c=>`<tr><td style="font-weight:600">${esc(c.name)}</td><td><span class="badge badge-orange">${esc(c.car_class||'?')}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${c.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('car','${c.id}', '${encodeURIComponent(JSON.stringify(c))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('car','${c.id}','${esc(c.name).replace(/'/g, "\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='pets'?`<div class="card"><div class="card-body">
           <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Pet mới</div>
