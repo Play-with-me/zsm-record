@@ -638,7 +638,7 @@ async function renderVideo(id) {
       if(fil.length) related=`<div>
         <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Kỷ Lục Tương Tự</div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          ${fil.map(r=>`<a href="#/video/${r.id}" class="card card-hover" style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+          ${fil.map(r=>`<a href="#/video/${r.id}" class="card card-hover" style="display:flex;align-items:center;gap:12px;padding:10px 14px" onclick="event.preventDefault(); showQuickView('${r.id}')">
             <span class="record-time">${fmtMs(r.record_ms)}</span>
             <div style="flex:1;overflow:hidden">
               <div style="font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.user?.username)}</div>
@@ -1133,4 +1133,44 @@ window.viewAvatar = function(url) {
     if(e.target === overlay) overlay.remove();
   };
   document.body.appendChild(overlay);
+}
+
+
+window.showQuickView = async function(id) {
+    try {
+      const v = await apiFetch(`/videos/${id}`);
+      $('quick-view-body').innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <h2 style="color:var(--neon-cyan); margin:0;">${esc(v.map?v.map.name:'Unknown')}</h2>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; background:var(--bg); padding:16px; border-radius:8px;">
+            <div>
+              <div style="font-size:0.8rem; color:var(--text-dim)">Người chơi</div>
+              <div style="font-weight:bold">${esc(v.user?v.user.username:'Unknown')}</div>
+            </div>
+            <div>
+              <div style="font-size:0.8rem; color:var(--text-dim)">Thời gian</div>
+              <div style="font-weight:bold; color:var(--neon-pink); font-size:1.2rem">${fmtMs(v.record_ms)}</div>
+            </div>
+            <div>
+              <div style="font-size:0.8rem; color:var(--text-dim)">Xe</div>
+              <div>${esc(v.car?v.car.name:'-')}</div>
+            </div>
+            <div>
+              <div style="font-size:0.8rem; color:var(--text-dim)">Pet</div>
+              <div>${esc(v.pet?v.pet.name:'-')}</div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+            <a href="#/video/${v.id}" class="btn btn-outline btn-sm" onclick="closeQuickView()">Chi tiết</a>
+          </div>
+        </div>
+      `;
+      $('quick-view-modal').classList.add('active');
+    } catch(e) {
+      toast('Lỗi tải thông tin: ' + e.message, 'error');
+    }
+}
+
+window.closeQuickView = function() {
+    $('quick-view-modal').classList.remove('active');
 }
