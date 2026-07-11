@@ -186,6 +186,12 @@ async def startup():
         pass
 
     try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN avatar_update_count INTEGER DEFAULT 0"))
+    except Exception:
+        pass
+
+    try:
         await reseed_maps()
         await reseed_cars()
         await reseed_pets()
