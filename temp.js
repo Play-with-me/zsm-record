@@ -326,7 +326,7 @@ async function renderHome() {
     // Process Hall of Fame (Top 3 users by number of records)
     const userCounts = {};
     const userObjs = {};
-    allVideos.forEach(v => {
+    allVideos.filter(v => v.visibility === 'PUBLIC').forEach(v => {
       if(v.user) {
         userCounts[v.user.id] = (userCounts[v.user.id] || 0) + 1;
         userObjs[v.user.id] = v.user;
@@ -586,7 +586,7 @@ async function renderBoard() {
   let defaultMapId = '';
   if (allVideos && allVideos.length > 0 && maps && maps.length > 0) {
       const mapCounts = {};
-      allVideos.forEach(v => {
+      allVideos.filter(v => v.visibility === 'PUBLIC').forEach(v => {
           if(v.map_id) mapCounts[v.map_id] = (mapCounts[v.map_id] || 0) + 1;
       });
       let mostPopularMapId = null;
@@ -892,7 +892,15 @@ async function renderProfile(userId) {
     ]);
     const totalMs = videos.reduce((a,v) => a+(v.record_ms||0), 0);
     const isOwner = currentUser?.id === userId;
+      const publicVideos = videos.filter(v => v.visibility === 'PUBLIC');
     
+    
+    let badgeHtml = '';
+    if (user.role === 'ADMIN') badgeHtml = `<span class="badge-label badge-boss" title="Quản trị viên">Boss</span>`;
+    else if (publicVideos.length >= 15) badgeHtml = `<span class="badge-label badge-monster" title="Trên 15 kỷ lục">Quái Vật Drift</span>`;
+    else if (publicVideos.length >= 5) badgeHtml = `<span class="badge-label badge-pro" title="Trên 5 kỷ lục">Racer Chuyên Nghiệp</span>`;
+    else badgeHtml = `<span class="badge-label badge-rookie" title="Dưới 5 kỷ lục">Tân Binh</span>`;
+
     // Calculate cooldowns
     let avatarWait = '', nameWait = '';
     if (isOwner) {
@@ -924,15 +932,15 @@ async function renderProfile(userId) {
           ${isOwner ? `<button id="avatar-edit-btn" onclick="event.stopPropagation(); editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
         </div>
         <div class="profile-info">
-          <h2 style="display:flex;align-items:center;gap:10px;">
-            ${esc(user.username)}
+          <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            ${esc(user.username)} ${badgeHtml}
             ${isOwner ? `<button onclick="editProfile('username')" class="btn" style="background:none;border:none;color:var(--text-muted);cursor:pointer;" title="Đổi tên ${nameWait}">&#9998;</button>` : ''}
           </h2>
           <p>${isOwner ? 'Hồ sơ của bạn' : 'Tay đua cộng đồng'}</p>
           <div class="profile-stats">
-            <div class="profile-stat"><div class="val">${videos.length}</div><div class="lbl">Số Record</div></div>
-            <div class="profile-stat"><div class="val">${videos.reduce((a,v)=>a+(v.views||0),0)}</div><div class="lbl">Tổng lượt xem</div></div>
-            ${videos.length?`<div class="profile-stat"><div class="val record-time" style="font-size:1.4rem">${fmtMs(Math.min(...videos.map(v=>v.record_ms)))}</div><div class="lbl">Thành tích tốt nhất</div></div>`:''}
+            <div class="profile-stat"><div class="val">${publicVideos.length}</div><div class="lbl">Số Record</div></div>
+            <div class="profile-stat"><div class="val">${publicVideos.reduce((a,v)=>a+(v.views||0),0)}</div><div class="lbl">Tổng lượt xem</div></div>
+            ${publicVideos.length?`<div class="profile-stat"><div class="val record-time" style="font-size:1.4rem">${fmtMs(Math.min(...publicVideos.map(v=>v.record_ms)))}</div><div class="lbl">Thành tích tốt nhất</div></div>`:''}
           </div>
         </div>
       </div>
