@@ -1219,10 +1219,24 @@ window.shareVideo = function(videoId) {
     });
 }
 
-window.delComment = async function(videoId, commentId) {
-    if(!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+window.delComment = function(videoId, commentId) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal">
+      <h3>Xóa bình luận</h3>
+      <p>Bạn có chắc chắn muốn xóa bình luận này?</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Hủy</button>
+        <button class="btn btn-danger btn-sm" onclick="doDelComment('${videoId}', '${commentId}', this.closest('.modal-overlay'))">Xóa</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+}
+
+window.doDelComment = async function(videoId, commentId, overlay) {
     try {
         await apiFetch(`/videos/${videoId}/comments/${commentId}`, {method: 'DELETE'});
+        if (overlay) overlay.remove();
         toast('Đã xóa bình luận!');
         const el = document.getElementById('comment-' + commentId);
         if(el) el.remove();
