@@ -390,7 +390,7 @@ function videoCard(v) {
     ${canEdit ? `<div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:6px">
       <button class="btn-icon" style="background:rgba(0,0,0,0.7);color:#fff;padding:5px;" onclick="editRecord('${v.id}')" title="Sửa">&#9998;</button>
     </div>` : ''}
-    <a href="javascript:void(0)" onclick="openQuickView('${v.id}')" class="thumb">
+    <a href="javascript:void(0)" onclick="showQuickView('${v.id}')" class="thumb">
       <img src="${esc(img)}" alt="${esc(v.map?.name)}" width="640" height="360" loading="lazy" decoding="async"/>
       <div class="overlay"></div>
       <div class="time-badge">${fmtMs(v.record_ms)}</div>
