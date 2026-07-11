@@ -1032,6 +1032,7 @@ async function renderAdmin() {
         <button class="tab-btn${tab==='cars'?' active':''}" onclick="adminTab('cars')">Siêu xe (${cars.length})</button>
         <button class="tab-btn${tab==='pets'?' active':''}" onclick="adminTab('pets')">Pets (${pets.length})</button>
         <button class="tab-btn${tab==='users'?' active':''}" onclick="adminTab('users')">Tài khoản (${users.length})</button>
+          <button class="tab-btn${tab==='tournaments'?' active':''}" onclick="adminTab('tournaments')">Giải đấu</button>
       </div></div>
 
       ${tab==='maps'?`
@@ -1043,8 +1044,8 @@ async function renderAdmin() {
             <button class="btn btn-primary btn-sm" onclick="adminAdd('map')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Độ khó</th><th>Mã ID</th></tr></thead>
-        <tbody>${maps.map(m=>`<tr><td style="font-weight:600">${esc(m.name)}</td><td><span style="color:var(--yellow)">${'★'.repeat(m.difficulty||1)}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${m.id}</td></tr>`).join('')}</tbody>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Độ khó</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <tbody>${maps.map(m=>`<tr><td style=\"font-weight:600\">${esc(m.name)}</td><td><span style=\"color:var(--yellow)\">${'★'.repeat(m.difficulty||1)}</span></td><td style=\"font-family:monospace;font-size:0.7rem;color:var(--text-dim)\">${m.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminEdit('map','${m.id}', '${encodeURIComponent(JSON.stringify(m))}')\">✏️</button> <button class=\"btn btn-danger btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminDelete('map','${m.id}','${esc(m.name).replace(/'/g, \"\\\\'\")}')\">🗑️</button></td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='cars'?`
         <div class="card"><div class="card-body">
@@ -1055,7 +1056,7 @@ async function renderAdmin() {
             <button class="btn btn-sm" style="background:var(--orange);color:#fff" onclick="adminAdd('car')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Phân khúc</th><th>Mã ID</th></tr></thead>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Phân khúc</th><th>Mã ID</th><th>Hành động</th></tr></thead>
         <tbody>${cars.map(c=>`<tr><td style="font-weight:600">${esc(c.name)}</td><td><span class="badge badge-orange">${esc(c.car_class||'?')}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${c.id}</td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='pets'?`<div class="card"><div class="card-body">
@@ -1065,8 +1066,8 @@ async function renderAdmin() {
             <button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="adminAdd('pet')">+ Thêm</button>
           </div>
         </div></div>
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th></tr></thead>
-        <tbody>${pets.map(p=>`<tr><td style="font-weight:600">${esc(p.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${p.id}</td></tr>`).join('')}</tbody>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <tbody>${pets.map(p=>`<tr><td style=\"font-weight:600\">${esc(p.name)}</td><td style=\"font-family:monospace;font-size:0.7rem;color:var(--text-dim)\">${p.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminEdit('pet','${p.id}', '${encodeURIComponent(JSON.stringify(p))}')\">✏️</button> <button class=\"btn btn-danger btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminDelete('pet','${p.id}','${esc(p.name).replace(/'/g, \"\\\\'\")}')\">🗑️</button></td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='users'?`
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Mã ID</th><th>Hành động</th></tr></thead>
@@ -1083,6 +1084,120 @@ async function renderAdmin() {
   }
 
   window.adminTab=(t)=>{ tab=t; renderTab(); };
+  
+// --- ADMIN CRUD LOGIC ---
+window.adminDelete = async function(type, id, name) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal">
+    <h3 style="margin-bottom:10px;color:var(--red)">Xác nhận Xóa</h3>
+    <p style="margin-bottom:20px;">Bạn có chắc chắn muốn xóa <b>${esc(name)}</b>?<br/>Hành động này không thể hoàn tác.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Hủy</button>
+      <button class="btn btn-danger btn-sm" onclick="doAdminDelete('${type}', '${id}', this.closest('.modal-overlay'))">Xóa</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+};
+
+window.doAdminDelete = async function(type, id, modal) {
+  modal.querySelector('button.btn-danger').disabled = true;
+  modal.querySelector('button.btn-danger').innerHTML = 'Đang xóa...';
+  try {
+    let endpoint = `/admin/${type}s/${id}`;
+    if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
+    await apiFetch(endpoint, {method: 'DELETE'});
+    toast('Đã xóa thành công!');
+    modal.remove();
+    clearApiCache();
+    if(window.location.hash.includes('admin')) {
+        document.querySelector('.tab-btn.active').click();
+    }
+  } catch(e) {
+    toast('Lỗi xóa: ' + e.message, 'error');
+    modal.querySelector('button.btn-danger').disabled = false;
+    modal.querySelector('button.btn-danger').innerHTML = 'Xóa';
+  }
+};
+
+window.adminEdit = async function(type, id, itemObj) {
+  const item = JSON.parse(decodeURIComponent(itemObj));
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  let formHtml = '';
+  
+  if(type==='map') {
+    formHtml = `
+      <div class="form-group"><label>Tên</label><input id="edit_name" class="form-input" value="${esc(item.name)}"/></div>
+      <div class="form-group"><label>Độ khó (sao)</label><input id="edit_diff" type="number" class="form-input" value="${item.difficulty||1}"/></div>
+    `;
+  } else if(type==='car') {
+    formHtml = `
+      <div class="form-group"><label>Tên</label><input id="edit_name" class="form-input" value="${esc(item.name)}"/></div>
+      <div class="form-group"><label>Class</label><input id="edit_class" class="form-input" value="${esc(item.car_class||'A')}"/></div>
+    `;
+  } else if(type==='pet') {
+    formHtml = `
+      <div class="form-group"><label>Tên</label><input id="edit_name" class="form-input" value="${esc(item.name)}"/></div>
+    `;
+  } else if(type==='user') {
+    formHtml = `
+      <div class="form-group"><label>Username</label><input class="form-input" value="${esc(item.username)}" disabled/></div>
+      <div class="form-group"><label>Role</label><select id="edit_role" class="form-select"><option value="USER" ${item.role==='USER'?'selected':''}>USER</option><option value="ADMIN" ${item.role==='ADMIN'?'selected':''}>ADMIN</option></select></div>
+    `;
+  } else if(type==='tournament') {
+    formHtml = `
+      <div class="form-group"><label>Tên</label><input id="edit_name" class="form-input" value="${esc(item.name)}"/></div>
+      <div class="form-group"><label>Mô tả</label><input id="edit_desc" class="form-input" value="${esc(item.description)}"/></div>
+      <div class="form-group"><label>Map ID</label><input id="edit_map" class="form-input" value="${esc(item.map_id)}"/></div>
+      <div style="display:flex;gap:10px;">
+        <div class="form-group" style="flex:1"><label>Bắt đầu</label><input id="edit_start" type="datetime-local" class="form-input" value="${item.start_time ? item.start_time.substring(0,16) : ''}"/></div>
+        <div class="form-group" style="flex:1"><label>Kết thúc</label><input id="edit_end" type="datetime-local" class="form-input" value="${item.end_time ? item.end_time.substring(0,16) : ''}"/></div>
+      </div>
+    `;
+  }
+
+  overlay.innerHTML = `<div class="modal">
+    <h3 style="margin-bottom:15px;color:var(--neon-cyan)">Sửa Thông Tin</h3>
+    ${formHtml}
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Hủy</button>
+      <button class="btn btn-primary btn-sm" onclick="doAdminEdit('${type}', '${id}', this.closest('.modal-overlay'))">Lưu</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+};
+
+window.doAdminEdit = async function(type, id, modal) {
+  try {
+    let bodyData = {};
+    if(type==='map') bodyData = {name: modal.querySelector('#edit_name').value, difficulty: parseInt(modal.querySelector('#edit_diff').value)};
+    else if(type==='car') bodyData = {name: modal.querySelector('#edit_name').value, car_class: modal.querySelector('#edit_class').value};
+    else if(type==='pet') bodyData = {name: modal.querySelector('#edit_name').value};
+    else if(type==='user') bodyData = {role: modal.querySelector('#edit_role').value};
+    else if(type==='tournament') bodyData = {
+      name: modal.querySelector('#edit_name').value, 
+      description: modal.querySelector('#edit_desc').value, 
+      map_id: modal.querySelector('#edit_map').value, 
+      start_time: new Date(modal.querySelector('#edit_start').value).toISOString(),
+      end_time: new Date(modal.querySelector('#edit_end').value).toISOString()
+    };
+    
+    let endpoint = `/admin/${type}s/${id}`;
+    if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
+    
+    await apiFetch(endpoint, {method: 'PUT', body: JSON.stringify(bodyData)});
+    toast('Đã cập nhật thành công!');
+    modal.remove();
+    clearApiCache();
+    if(window.location.hash.includes('admin')) {
+        document.querySelector('.tab-btn.active').click();
+    }
+  } catch(e) {
+    toast('Lỗi cập nhật: ' + e.message, 'error');
+  }
+};
+
   window.adminAdd=async(type)=>{
     try {
       if(type==='map'){
