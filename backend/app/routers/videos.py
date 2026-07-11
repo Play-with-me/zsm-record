@@ -124,3 +124,18 @@ async def like_video(
     await db.commit()
     return {"message": "Liked successfully", "likes": db_video.likes}
 
+@router.get("/{video_id}/comments", response_model=List[schemas.CommentResponse])
+async def read_comments(video_id: str, db: AsyncSession = Depends(get_db)):
+    return await crud.get_comments_for_video(db, video_id=video_id)
+
+@router.post("/{video_id}/comments", response_model=schemas.CommentResponse)
+async def create_comment_endpoint(
+    video_id: str,
+    comment: schemas.CommentCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db_video = await crud.get_video(db, video_id=video_id)
+    if db_video is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return await crud.create_comment(db, comment=comment, video_id=video_id, user_id=current_user.id)

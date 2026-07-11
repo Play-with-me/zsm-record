@@ -294,6 +294,16 @@ async function renderHome() {
     </div></section>
     <section>
       <div class="section-header">
+        <h2 style="color:var(--neon-cyan); text-shadow:var(--neon-glow-cyan);">👑 Top 3 Vinh Danh 👑</h2>
+      </div>
+      <div class="video-grid" id="hall-of-fame" style="margin-bottom: 36px;">
+        <div class="skeleton" style="height:100px;border-radius:var(--radius)"></div>
+        <div class="skeleton" style="height:100px;border-radius:var(--radius)"></div>
+        <div class="skeleton" style="height:100px;border-radius:var(--radius)"></div>
+      </div>
+    </section>
+    <section>
+      <div class="section-header">
         <h2>Record Mới Nhất</h2>
         <a href="#/board" style="font-size:0.83rem;color:var(--purple-light)">Xem tất cả &rarr;</a>
       </div>
@@ -302,15 +312,46 @@ async function renderHome() {
   </div>`;
 
   try {
-    const [videos, maps, cars] = await Promise.all([
-      cachedApiFetch('/videos?limit=8', 30000), cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000)
+    const [allVideos, maps, cars] = await Promise.all([
+      cachedApiFetch('/videos?limit=200', 30000), cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000)
     ]);
+    
+    // Process Hall of Fame (Top 3 users by number of records)
+    const userCounts = {};
+    const userObjs = {};
+    allVideos.forEach(v => {
+      if(v.user) {
+        userCounts[v.user.id] = (userCounts[v.user.id] || 0) + 1;
+        userObjs[v.user.id] = v.user;
+      }
+    });
+    const topUsers = Object.keys(userCounts)
+      .map(id => ({ user: userObjs[id], count: userCounts[id] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+      
+    $('hall-of-fame').innerHTML = topUsers.length 
+      ? topUsers.map((u, i) => `
+        <a href="#/profile/${u.user.id}" class="card card-hover" style="display:flex;align-items:center;padding:16px;gap:12px;background:linear-gradient(135deg,rgba(15,15,35,0.8),rgba(10,5,25,0.9));border:1px solid ${i===0?'var(--yellow)':(i===1?'#cbd5e1':'var(--orange)')};box-shadow:0 0 15px ${i===0?'rgba(251,191,36,0.2)':'transparent'}">
+          <div style="font-size:1.8rem;font-weight:900;color:${i===0?'var(--yellow)':(i===1?'#cbd5e1':'var(--orange)')}">${i+1}</div>
+          ${u.user.avatar ? `<img src="${esc(optimizedImage(u.user.avatar, 64))}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${i===0?'var(--yellow)':'var(--border)'}"/>` : `<div style="width:48px;height:48px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:bold">${esc(u.user.username[0].toUpperCase())}</div>`}
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:1rem;color:var(--text)">${esc(u.user.username)}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">${u.count} Kỷ lục</div>
+          </div>
+          ${i===0 ? '<div style="font-size:1.5rem">👑</div>' : ''}
+        </a>
+      `).join('')
+      : '<div class="empty" style="grid-column:1/-1">Chưa có đủ dữ liệu</div>';
+
     $('hero-stats').innerHTML=`
-      <div class="hero-stat"><div class="val">${videos.length < 8 ? videos.length : '8+'}</div><div class="lbl">Số Record</div></div>
+      <div class="hero-stat"><div class="val">${allVideos.length}</div><div class="lbl">Số Record</div></div>
       <div class="hero-stat"><div class="val">${maps.length}</div><div class="lbl">Bản Đồ</div></div>
       <div class="hero-stat"><div class="val">${cars.length}</div><div class="lbl">Siêu Xe</div></div>`;
-    $('home-grid').innerHTML = videos.length
-      ? videos.map(videoCard).join('')
+      
+    const recentVideos = allVideos.slice(0, 8);
+    $('home-grid').innerHTML = recentVideos.length
+      ? recentVideos.map(videoCard).join('')
       : '<div class="empty"><div class="empty-icon">&#128263;</div><p>Chưa có record nào. Hãy là người đầu tiên tải lên!</p></div>';
   } catch { $('home-grid').innerHTML='<div class="empty" style="color:var(--red)">Tải dữ liệu thất bại. Bạn đã chạy backend chưa?</div>'; }
 }
@@ -625,8 +666,79 @@ async function renderVideo(id) {
           ${related}
         </div>
       </div>
-    </div>`;
+    </div>
+    <div class="card" style="margin-top: 24px; max-width: 1400px;">
+      <div class="card-body">
+        <div style="font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan);text-shadow:var(--neon-glow-cyan);">Bình Luận</div>
+        <div id="comments-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+          <div class="skeleton" style="height:60px;border-radius:8px"></div>
+        </div>
+        ${currentUser ? `
+          <form id="comment-form" onsubmit="submitComment(event, '${id}')" style="display:flex;gap:10px;">
+            <input type="text" id="comment-input" class="form-input" placeholder="Viết bình luận của bạn..." required style="flex:1;" />
+            <button type="submit" class="btn btn-purple">Gửi</button>
+          </form>
+        ` : '<div style="font-size:0.85rem;color:var(--text-muted)">Vui lòng <a href="#/login" style="color:var(--neon-cyan)">đăng nhập</a> để bình luận.</div>'}
+      </div>
+    </div>
+  </div>`;
+  
+  loadComments(id);
   } catch { $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy record.</div>'; }
+}
+
+async function loadComments(videoId) {
+  try {
+    const comments = await apiFetch(`/videos/${videoId}/comments`);
+    const list = $('comments-list');
+    if (!list) return;
+    
+    if (comments.length === 0) {
+      list.innerHTML = '<div class="empty" style="padding: 10px;">Chưa có bình luận nào.</div>';
+      return;
+    }
+    
+    list.innerHTML = comments.map(c => `
+      <div style="display:flex;gap:12px;padding:12px;background:var(--bg-input);border-radius:8px;">
+        ${c.user.avatar ? `<img src="${esc(optimizedImage(c.user.avatar, 64))}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"/>` : `<div style="width:36px;height:36px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:bold">${esc(c.user.username[0].toUpperCase())}</div>`}
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-weight:bold;font-size:0.9rem">${esc(c.user.username)}</span>
+            <span style="font-size:0.75rem;color:var(--text-dim)">${dateStr(c.created_at)}</span>
+          </div>
+          <div style="font-size:0.85rem;color:var(--text);white-space:pre-wrap;">${esc(c.content)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error(e);
+    if($('comments-list')) $('comments-list').innerHTML = '<div class="empty" style="color:var(--red)">Lỗi tải bình luận.</div>';
+  }
+}
+
+window.submitComment = async function(e, videoId) {
+  e.preventDefault();
+  const input = $('comment-input');
+  const btn = e.target.querySelector('button');
+  const content = input.value.trim();
+  if (!content) return;
+  
+  btn.disabled = true;
+  btn.textContent = 'Đang gửi...';
+  
+  try {
+    await apiFetch(`/videos/${videoId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    });
+    input.value = '';
+    await loadComments(videoId);
+  } catch(err) {
+    alert('Lỗi khi gửi bình luận');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Gửi';
+  }
 }
 
 // ── PROFILE ───────────────────────────────────────────
@@ -718,11 +830,52 @@ async function renderProfile(userId) {
           </div>
         </div>
       </div>
+      
+      ${videos.length > 0 ? `
+      <div class="card" style="margin-top: 24px; padding: 20px;">
+        <h3 style="margin-bottom: 15px; font-size: 1rem; color: var(--neon-cyan); text-shadow: var(--neon-glow-cyan);">Biểu đồ Tiến bộ (Thời gian Kỷ lục)</h3>
+        <canvas id="progressionChart" style="max-height: 250px;"></canvas>
+      </div>` : ''}
+
       <div class="section-header" style="margin-top:20px;"><h2>Tất Cả Record</h2></div>
       <div class="video-grid">
         ${videos.length ? videos.map(videoCard).join('') : '<div class="empty">Người này chưa tải lên record nào.</div>'}
       </div>
     </div>`;
+
+    if (videos.length > 0 && typeof Chart !== 'undefined') {
+      const sortedVideos = [...videos].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      const labels = sortedVideos.map(v => new Date(v.created_at).toLocaleDateString('vi-VN'));
+      const data = sortedVideos.map(v => v.record_ms / 1000);
+      
+      new Chart($('progressionChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Thời gian (Giây)',
+            data: data,
+            borderColor: '#0ff',
+            backgroundColor: 'rgba(0, 255, 255, 0.1)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: '#f0f',
+            pointBorderColor: '#f0f'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { title: { display: true, text: 'Thời gian (Giây)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
   } catch(e) { console.error(e); $('app').innerHTML='<div class="empty" style="color:var(--red)">Không tìm thấy hồ sơ người dùng.</div>'; }
 }
 

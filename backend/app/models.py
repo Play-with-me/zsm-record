@@ -31,6 +31,7 @@ class User(Base):
     last_avatar_update = Column(DateTime, nullable=True)
 
     videos = relationship("Video", back_populates="user")
+    comments = relationship("Comment", back_populates="user")
 
 class Map(Base):
     __tablename__ = "maps"
@@ -84,3 +85,16 @@ class Video(Base):
     map = relationship("Map", back_populates="videos")
     car = relationship("Car", back_populates="videos")
     pet = relationship("Pet", back_populates="videos")
+    comments = relationship("Comment", back_populates="video", cascade="all, delete-orphan")
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    video_id = Column(String, ForeignKey("videos.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    video = relationship("Video", back_populates="comments")
+    user = relationship("User", back_populates="comments")

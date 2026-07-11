@@ -229,3 +229,31 @@ async def get_record_board_by_map(db: AsyncSession, map_id: str = None, car_id: 
         
     # Sort groups by map name or leave as is (dict values)
     return list(map_groups.values())
+
+# --- Comments ---
+async def get_comments_for_video(db: AsyncSession, video_id: str):
+    result = await db.execute(
+        select(models.Comment)
+        .options(selectinload(models.Comment.user))
+        .filter(models.Comment.video_id == video_id)
+        .order_by(desc(models.Comment.created_at))
+    )
+    return result.scalars().all()
+
+async def create_comment(db: AsyncSession, comment: schemas.CommentCreate, video_id: str, user_id: str):
+    db_comment = models.Comment(
+        video_id=video_id,
+        user_id=user_id,
+        content=comment.content
+    )
+    db.add(db_comment)
+    await db.commit()
+    await db.refresh(db_comment)
+    
+    # Eager load user
+    result = await db.execute(
+        select(models.Comment)
+        .options(selectinload(models.Comment.user))
+        .filter(models.Comment.id == db_comment.id)
+    )
+    return result.scalars().first()

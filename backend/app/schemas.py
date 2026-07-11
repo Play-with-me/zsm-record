@@ -134,3 +134,19 @@ class MapLeaderboardEntry(BaseModel):
     records: List[RecordBoardEntry]
     class Config:
         from_attributes = True
+
+# ----------------- Comments -----------------
+class CommentBase(BaseModel):
+    content: str
+
+class CommentCreate(CommentBase):
+    pass
+
+class CommentResponse(CommentBase):
+    id: str
+    video_id: str
+    user_id: str
+    created_at: datetime
+    user: UserResponse
+    class Config:
+        from_attributes = True
