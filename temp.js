@@ -1079,9 +1079,25 @@ async function renderAdmin() {
           <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
           <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
         </tr>`).join('')}</tbody>
-        </table></div>`:''}
-    </div>`;
-  }
+        </table></div>`:
+        tab==='tournaments'?`
+          <div class="card"><div class="card-body">
+            <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Giải Đấu Mới</div>
+            <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="form-group"><label class="form-label">Tên giải đấu *</label><input class="form-input" id="t_name" placeholder="VD: Asian Cup 2026"/></div>
+              <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="t_desc" placeholder="Mô tả giải đấu"/></div>
+              <div class="form-group"><label class="form-label">Map ID *</label><select class="form-select" id="t_map">${maps.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select></div>
+              <div style="display:flex;gap:12px;">
+                <div class="form-group" style="flex:1"><label class="form-label">Bắt đầu *</label><input class="form-input" type="datetime-local" id="t_start"/></div>
+                <div class="form-group" style="flex:1"><label class="form-label">Kết thúc *</label><input class="form-input" type="datetime-local" id="t_end"/></div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="adminAdd('tournament')">+ Thêm Giải Đấu</button>
+            </div>
+          </div></div>
+          <div id="admin-t-list" style="margin-top:20px;">Đang tải danh sách giải...</div>
+        `:''}
+      </div>`;
+    }
 
   
       if(tab==='tournaments'){
