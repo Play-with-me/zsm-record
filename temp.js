@@ -734,7 +734,7 @@ async function renderVideo(id) {
             </div>
             <div style="display:flex;align-items:center;gap:16px;">
               <span class="info-stat">&#128197; ${dateStr(video.created_at)}</span>
-              <span class="info-stat">&#128065; <span class="count-up" data-val="${video.views||0}">0</span></span>
+              <span class="info-stat">&#128065; <span class="count-up" data-val="${video.views||0}">${video.views||0}</span></span>
               <div style="position:relative; display:inline-block;">
                 <button onclick="toggleLike(this, '${video.id}')" class="btn btn-sm ${localStorage.getItem('liked_'+video.id) ? 'btn-purple' : 'btn-outline'}" style="border-color:var(--neon-pink); color:${localStorage.getItem('liked_'+video.id)?'white':'var(--neon-pink)'}; display:flex; align-items:center; gap:6px;">
                   ${localStorage.getItem('liked_'+video.id) ? '&#10084;' : '&#128077;'} <span id="like-count" class="count-up" data-val="${video.likes||0}">${video.likes||0}</span>
