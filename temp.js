@@ -581,11 +581,28 @@ async function renderBoard() {
     </tr></thead><tbody id="board-body">${skRows(5)}</tbody></table></div>
   </div>`;
 
-  const [maps,cars,pets]=await Promise.all([cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000), cachedApiFetch('/pets', 300000)]);
+  const [maps,cars,pets,allVideos]=await Promise.all([cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000), cachedApiFetch('/pets', 300000), cachedApiFetch('/videos?limit=500', 30000)]);
+  
+  let defaultMapId = '';
+  if (allVideos && allVideos.length > 0 && maps && maps.length > 0) {
+      const mapCounts = {};
+      allVideos.forEach(v => {
+          if(v.map_id) mapCounts[v.map_id] = (mapCounts[v.map_id] || 0) + 1;
+      });
+      let mostPopularMapId = null;
+      let maxCount = 0;
+      for (const [mid, count] of Object.entries(mapCounts)) {
+          if (count > maxCount) { maxCount = count; mostPopularMapId = mid; }
+      }
+      if (mostPopularMapId) {
+          defaultMapId = mostPopularMapId;
+      }
+  }
+
   $('app').querySelector('.skeleton').outerHTML=`<div class="filter-bar">
     <h2>Lọc Dữ Liệu</h2>
     <div class="filter-grid">
-      <div class="form-group"><label class="form-label">Bản đồ</label>${mkCombobox('bmap',maps.map(m=>({label:m.name,value:m.id})),'Tất cả bản đồ')}</div>
+      <div class="form-group"><label class="form-label">Bản đồ</label>${mkCombobox('bmap',maps.map(m=>({label:m.name,value:m.id})),'Tất cả bản đồ',defaultMapId)}</div>
       <div class="form-group"><label class="form-label">Siêu xe</label>${mkCombobox('bcar',cars.map(c=>({label:c.name,value:c.id})),'Tất cả siêu xe')}</div>
       <div class="form-group"><label class="form-label">Pet</label>${mkCombobox('bpet',pets.map(p=>({label:p.name,value:p.id})),'Tất cả pet')}</div>
     </div>
@@ -668,7 +685,7 @@ async function renderVideo(id) {
     const video=await apiFetch(`/videos/${id}`);
     const proof=proofImage(video, 1400);
     const videoLink=cleanUrl(video.video_url);
-    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" width="1400" height="788" loading="eager" decoding="async" fetchpriority="high" style="width:100%;height:auto;max-height:80vh;object-fit:cover;border-radius:12px;border:1px solid var(--neon-purple);box-shadow:0 0 20px rgba(188,19,254,0.15)"/>`;
+    const media=`<img src="${esc(proof)}" alt="Ảnh kỷ lục ${esc(video.map?.name||'record')}" loading="eager" decoding="async" fetchpriority="high" />`;
     const videoButton=videoLink
       ? `<a href="${esc(videoLink)}" target="_blank" rel="noopener" class="btn btn-purple btn-sm" style="flex-shrink:0">Xem Video &#8599;</a>`
       : '';
