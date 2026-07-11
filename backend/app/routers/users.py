@@ -122,12 +122,13 @@ async def update_avatar(
         raise HTTPException(status_code=400, detail="File tải lên phải là hình ảnh hợp lệ.")
 
     cloudinary_url = os.getenv("CLOUDINARY_URL")
-    if cloudinary_url:
+    image_url = None
+    file_content = await avatar_file.read()
+    
+    if cloudinary_url and "your_api_key" not in cloudinary_url:
         import cloudinary
         import cloudinary.uploader
         from fastapi.concurrency import run_in_threadpool
-        
-        file_content = await avatar_file.read()
         
         def upload_to_cloudinary(content, fname):
             res = cloudinary.uploader.upload(
@@ -142,8 +143,10 @@ async def update_avatar(
         try:
             image_url = await run_in_threadpool(upload_to_cloudinary, file_content, filename)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Lỗi tải lên ảnh: {str(e)}")
-    else:
+            print(f"Cloudinary upload failed: {e}, falling back to local storage")
+            pass
+
+    if not image_url:
         # Local fallback
         filename_orig = avatar_file.filename if avatar_file.filename else "image.jpg"
         file_ext = os.path.splitext(filename_orig)[1]
@@ -154,7 +157,7 @@ async def update_avatar(
         filepath = os.path.join(uploads_dir, filename)
         
         with open(filepath, "wb") as f:
-            f.write(await avatar_file.read())
+            f.write(file_content)
             
         image_url = f"/uploads/{filename}"
 
