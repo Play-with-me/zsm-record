@@ -1045,7 +1045,7 @@ async function renderAdmin() {
           </div>
         </div></div>
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Độ khó</th><th>Mã ID</th><th>Hành động</th></tr></thead>
-        <tbody>${maps.map(m=>`<tr><td style=\"font-weight:600\">${esc(m.name)}</td><td><span style=\"color:var(--yellow)\">${'★'.repeat(m.difficulty||1)}</span></td><td style=\"font-family:monospace;font-size:0.7rem;color:var(--text-dim)\">${m.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminEdit('map','${m.id}', '${encodeURIComponent(JSON.stringify(m))}')\">✏️</button> <button class=\"btn btn-danger btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminDelete('map','${m.id}','${esc(m.name).replace(/'/g, \"\\\\'\")}')\">🗑️</button></td></tr>`).join('')}</tbody>
+        <tbody>${maps.map(m=>`<tr><td style="font-weight:600">${esc(m.name)}</td><td><span style="color:var(--yellow)">${'★'.repeat(m.difficulty||1)}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${m.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('map','${m.id}', '${encodeURIComponent(JSON.stringify(m))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('map','${m.id}','${esc(m.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='cars'?`
         <div class="card"><div class="card-body">
@@ -1067,7 +1067,7 @@ async function renderAdmin() {
           </div>
         </div></div>
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th><th>Hành động</th></tr></thead>
-        <tbody>${pets.map(p=>`<tr><td style=\"font-weight:600\">${esc(p.name)}</td><td style=\"font-family:monospace;font-size:0.7rem;color:var(--text-dim)\">${p.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminEdit('pet','${p.id}', '${encodeURIComponent(JSON.stringify(p))}')\">✏️</button> <button class=\"btn btn-danger btn-sm\" style=\"padding:2px 8px;font-size:0.7rem\" onclick=\"adminDelete('pet','${p.id}','${esc(p.name).replace(/'/g, \"\\\\'\")}')\">🗑️</button></td></tr>`).join('')}</tbody>
+        <tbody>${pets.map(p=>`<tr><td style="font-weight:600">${esc(p.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${p.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('pet','${p.id}', '${encodeURIComponent(JSON.stringify(p))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('pet','${p.id}','${esc(p.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='users'?`
         <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Mã ID</th><th>Hành động</th></tr></thead>
