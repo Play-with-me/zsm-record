@@ -114,12 +114,12 @@ async def update_avatar(
     # Check 1-day cooldown
     if current_user.last_avatar_update:
         delta = datetime.utcnow() - current_user.last_avatar_update
-        if delta < timedelta(days=1):
-            hours_left = 24 - (delta.seconds // 3600)
+        if delta.total_seconds() < 86400:
+            hours_left = 24 - int(delta.total_seconds() // 3600)
             raise HTTPException(status_code=400, detail=f"Bạn chỉ được đổi ảnh đại diện 1 lần mỗi ngày. Vui lòng thử lại sau {hours_left} giờ.")
 
-    if not avatar_file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File tải lên phải là hình ảnh.")
+    if not avatar_file.content_type or not avatar_file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File tải lên phải là hình ảnh hợp lệ.")
 
     cloudinary_url = os.getenv("CLOUDINARY_URL")
     if cloudinary_url:
@@ -145,7 +145,8 @@ async def update_avatar(
             raise HTTPException(status_code=500, detail=f"Lỗi tải lên ảnh: {str(e)}")
     else:
         # Local fallback
-        file_ext = os.path.splitext(avatar_file.filename)[1]
+        filename_orig = avatar_file.filename if avatar_file.filename else "image.jpg"
+        file_ext = os.path.splitext(filename_orig)[1]
         filename = f"avatar_{current_user.id}_{uuid.uuid4().hex[:8]}{file_ext}"
         
         uploads_dir = os.path.join(os.getcwd(), "uploads")

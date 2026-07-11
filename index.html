@@ -116,7 +116,51 @@
     @keyframes slideDown { from { opacity:0; transform:scaleY(0.9) translateY(-4px); } to { opacity:1; transform:scaleY(1) translateY(0); } }
     @keyframes spin { to { transform:rotate(360deg); } }
     @keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+    
+    @keyframes floatUp { 0% { opacity:1; transform:translateY(0) scale(1); } 100% { opacity:0; transform:translateY(-30px) scale(1.5); } }
+    .floating-plus-one { position:absolute; color:var(--neon-pink); font-weight:bold; font-size:1.2rem; text-shadow:var(--neon-glow-pink); animation:floatUp 0.8s ease-out forwards; pointer-events:none; }
+    
+    @keyframes glitch-anim {
+      0% { clip-path: inset(10% 0 30% 0); transform: translate(-2px, 1px); }
+      20% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -1px); }
+      40% { clip-path: inset(40% 0 60% 0); transform: translate(-2px, 2px); }
+      60% { clip-path: inset(20% 0 10% 0); transform: translate(2px, -2px); }
+      80% { clip-path: inset(60% 0 40% 0); transform: translate(-1px, 1px); }
+      100% { clip-path: inset(30% 0 20% 0); transform: translate(1px, -1px); }
+    }
+    .glitch { position:relative; display:inline-block; }
+    .glitch:hover::before {
+      content: attr(data-text); position:absolute; left:-2px; text-shadow:1px 0 var(--neon-cyan);
+      top:0; color:var(--text); background:var(--bg); overflow:hidden; animation:glitch-anim 0.3s infinite linear alternate-reverse;
+    }
+    
     .animate-in { animation:fadeUp 0.45s ease-out; }
+    
+    /* BACKGROUND */
+    .cyberpunk-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; background:var(--bg); overflow:hidden; }
+    @keyframes moveGrid { from { transform:perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); } to { transform:perspective(500px) rotateX(60deg) translateY(40px) translateZ(-200px); } }
+    .cyberpunk-grid { position:absolute; top:-50%; left:-50%; width:200%; height:200%; background-image:linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px); background-size:40px 40px; transform:perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation:moveGrid 5s linear infinite; }
+    .glow-orb { position:absolute; width:400px; height:400px; border-radius:50%; filter:blur(100px); opacity:0.3; z-index:-1; animation:floatOrb 10s ease-in-out infinite alternate; }
+    .glow-orb.cyan { background:var(--neon-cyan); top:-100px; left:-100px; }
+    .glow-orb.purple { background:var(--neon-purple); bottom:-100px; right:-100px; animation-delay:-5s; }
+    @keyframes floatOrb { 0% { transform:translate(0, 0); } 100% { transform:translate(50px, 50px); } }
+    
+    /* BRACKET FRAME */
+    .bracket-frame { position:relative; display:inline-block; padding:4px; }
+    .bracket-frame::before, .bracket-frame::after { content:''; position:absolute; width:20px; height:20px; border:2px solid var(--neon-cyan); transition:var(--transition); z-index:1; }
+    .bracket-frame::before { top:0; left:0; border-right:none; border-bottom:none; }
+    .bracket-frame::after { bottom:0; right:0; border-left:none; border-top:none; }
+    .bracket-frame:hover::before { width:100%; height:100%; border-color:var(--neon-purple); box-shadow:inset 0 0 10px var(--neon-glow-purple); }
+    .bracket-frame:hover::after { width:100%; height:100%; border-color:var(--neon-purple); }
+    
+    /* QUICK VIEW MODAL */
+    .quick-view-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); z-index:1000; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+    .quick-view-overlay.active { opacity:1; pointer-events:auto; }
+    .quick-view-content { background:rgba(10,5,25,0.95); border:1px solid var(--neon-cyan); box-shadow:var(--neon-glow-cyan); border-radius:var(--radius-lg); width:90%; max-width:400px; padding:24px; transform:scale(0.9); transition:transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275); position:relative; }
+    .quick-view-overlay.active .quick-view-content { transform:scale(1); }
+    .btn-close-modal { position:absolute; top:10px; right:15px; font-size:1.5rem; cursor:pointer; color:var(--text-muted); transition:color 0.2s; }
+    .btn-close-modal:hover { color:var(--neon-pink); text-shadow:var(--neon-glow-pink); }
+
 
     /* NAVBAR */
     .navbar {
@@ -135,6 +179,10 @@
       text-shadow: 0 0 10px rgba(220,38,38,0.3); transition: transform 0.3s ease;
     }
     .logo:hover { transform: scale(1.05); }
+    .nav-search { display:flex; align-items:center; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:20px; padding:4px 12px; transition:var(--transition); }
+    .nav-search:focus-within { border-color:var(--neon-cyan); box-shadow:var(--neon-glow-cyan); }
+    .nav-search input { background:transparent; border:none; color:var(--text); font-size:0.85rem; outline:none; padding:4px; width:150px; }
+    .nav-search input::placeholder { color:var(--text-dim); }
     .nav-links { display:flex; align-items:center; gap:4px; }
     .nav-link {
       padding:6px 12px; border-radius:8px; font-size:0.85rem; font-weight:500;
@@ -517,6 +565,20 @@
   </style>
 </head>
 <body>
+  <!-- BACKGROUND ANIMATION -->
+  <div class="cyberpunk-bg">
+    <div class="cyberpunk-grid"></div>
+    <div class="glow-orb cyan"></div>
+    <div class="glow-orb purple"></div>
+  </div>
+
+  <!-- QUICK VIEW MODAL -->
+  <div id="quick-view-modal" class="quick-view-overlay" onclick="if(event.target===this) closeQuickView()">
+    <div class="quick-view-content">
+      <span class="btn-close-modal" onclick="closeQuickView()">&times;</span>
+      <div id="quick-view-body"></div>
+    </div>
+  </div>
 
 <!-- Speed Streaks Animation -->
 <div class="speed-streaks">

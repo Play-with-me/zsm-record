@@ -34,6 +34,9 @@ function optimizedImage(url, width=900) {
   if(url.includes('res.cloudinary.com') && url.includes('/upload/') && !url.includes('/upload/f_auto')) {
     return url.replace('/upload/', `/upload/f_auto,q_auto,c_limit,w_${width}/`);
   }
+  if(url.startsWith('/uploads/')) {
+    return API.replace('/api/v1', '') + url;
+  }
   return url;
 }
 function proofImage(v, width=900) {
@@ -303,8 +306,12 @@ async function renderHome() {
       </div>
     </section>
     <section>
-      <div class="section-header">
-        <h2>Record Mới Nhất</h2>
+    <section>
+      <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; gap:16px;">
+          <h2 id="tab-latest" class="tab-title active" onclick="switchHomeTab('latest')" style="cursor:pointer; color:var(--neon-cyan); transition:var(--transition); text-shadow:var(--neon-glow-cyan);">Mới Nhất</h2>
+          <h2 id="tab-trending" class="tab-title" onclick="switchHomeTab('trending')" style="cursor:pointer; color:var(--text-dim); transition:var(--transition);">Xu Hướng</h2>
+        </div>
         <a href="#/board" style="font-size:0.83rem;color:var(--purple-light)">Xem tất cả &rarr;</a>
       </div>
       <div class="video-grid" id="home-grid">${skCards(8)}</div>
@@ -349,25 +356,45 @@ async function renderHome() {
       <div class="hero-stat"><div class="val">${maps.length}</div><div class="lbl">Bản Đồ</div></div>
       <div class="hero-stat"><div class="val">${cars.length}</div><div class="lbl">Siêu Xe</div></div>`;
       
-    const recentVideos = allVideos.slice(0, 8);
-    $('home-grid').innerHTML = recentVideos.length
-      ? recentVideos.map(videoCard).join('')
-      : '<div class="empty"><div class="empty-icon">&#128263;</div><p>Chưa có record nào. Hãy là người đầu tiên tải lên!</p></div>';
+    window.homeAllVideos = allVideos;
+    window.switchHomeTab('latest');
+    
   } catch { $('home-grid').innerHTML='<div class="empty" style="color:var(--red)">Tải dữ liệu thất bại. Bạn đã chạy backend chưa?</div>'; }
 }
 
+window.switchHomeTab = function(tab) {
+  const vids = window.homeAllVideos || [];
+  if (tab === 'latest') {
+    $('tab-latest').style.color = 'var(--neon-cyan)';
+    $('tab-latest').style.textShadow = 'var(--neon-glow-cyan)';
+    $('tab-trending').style.color = 'var(--text-dim)';
+    $('tab-trending').style.textShadow = 'none';
+    const sorted = [...vids].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    $('home-grid').innerHTML = sorted.slice(0, 8).map(videoCard).join('');
+  } else {
+    $('tab-trending').style.color = 'var(--neon-pink)';
+    $('tab-trending').style.textShadow = 'var(--neon-glow-pink)';
+    $('tab-latest').style.color = 'var(--text-dim)';
+    $('tab-latest').style.textShadow = 'none';
+    const sorted = [...vids].sort((a,b)=>((b.views||0)+(b.likes||0)*2) - ((a.views||0)+(a.likes||0)*2));
+    $('home-grid').innerHTML = sorted.slice(0, 8).map(videoCard).join('');
+  }
+}
+
+window.cachedVideos = window.cachedVideos || {};
 function videoCard(v) {
+  window.cachedVideos[v.id] = v;
   const img=proofImage(v, 640);
   const canEdit = currentUser && (currentUser.id === v.user?.id || currentUser.role === 'ADMIN');
   return `<div class="card card-hover video-card" style="position:relative;">
     ${canEdit ? `<div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:6px">
       <button class="btn-icon" style="background:rgba(0,0,0,0.7);color:#fff;padding:5px;" onclick="editRecord('${v.id}')" title="Sửa">&#9998;</button>
     </div>` : ''}
-    <a href="#/video/${v.id}" class="thumb">
+    <a href="javascript:void(0)" onclick="openQuickView('${v.id}')" class="thumb">
       <img src="${esc(img)}" alt="${esc(v.map?.name)}" width="640" height="360" loading="lazy" decoding="async"/>
       <div class="overlay"></div>
       <div class="time-badge">${fmtMs(v.record_ms)}</div>
-      <div class="play-btn" title="Xem chi tiết">&#128065;</div>
+      <div class="play-btn" title="Xem nhanh">&#128065;</div>
     </a>
     <div class="info">
       <div class="title">${esc(v.map?.name)}</div>
@@ -624,25 +651,36 @@ async function renderVideo(id) {
     const canDel=currentUser&&(currentUser.id===video.user_id||currentUser.role==='ADMIN');
 
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
-      <div class="video-player">${media}</div>
+      <div class="video-player" style="text-align:center;">
+        <div class="bracket-frame" style="display:inline-block; border-radius:8px; overflow:hidden;">
+          ${media}
+        </div>
+      </div>
       <div class="detail-grid">
         <div style="display:flex;flex-direction:column;gap:18px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;line-height:1.2;flex:1;min-width:min(260px,100%)">${esc(video.map?.name)} — ${esc(video.car?.name)}</h1>
+            <h1 class="glitch" data-text="${esc(video.map?.name)} — ${esc(video.car?.name)}" style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;line-height:1.2;flex:1;min-width:min(260px,100%); color:transparent; background-clip:text; -webkit-background-clip:text; background-image:linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));">${esc(video.map?.name)} — ${esc(video.car?.name)}</h1>
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap">
               ${videoButton}
               ${canDel?`<button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="confirmDelete('${video.id}','${esc(video.map?.name)} - ${esc(video.car?.name)}')">Xóa</button>`:''}
             </div>
           </div>
-          <div class="info-bar">
+          <div class="info-bar" style="background:rgba(255,255,255,0.03); padding:10px 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex;align-items:center;gap:10px">
-              <span class="avatar avatar-md">${esc(video.user?.username[0].toUpperCase())}</span>
-              <div><div style="font-size:0.72rem;color:var(--text-dim)">Người đăng</div><div style="font-weight:700;font-size:0.9rem">${esc(video.user?.username)}</div></div>
+              <span class="avatar avatar-md" style="box-shadow:var(--neon-glow-purple); border:1px solid var(--neon-purple);">${esc(video.user?.username[0].toUpperCase())}</span>
+              <div><div style="font-size:0.72rem;color:var(--text-dim)">Người đăng</div><div style="font-weight:700;font-size:0.9rem; color:var(--neon-cyan);">${esc(video.user?.username)}</div></div>
             </div>
-            <div class="info-bar-sep"></div>
-            <span class="info-stat">&#128197; ${dateStr(video.created_at)}</span>
-            <span class="info-stat">&#128065; ${video.views||0} lượt xem</span>
-            <span class="info-stat">&#128077; ${video.likes||0} lượt thích</span>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <span class="info-stat">&#128197; ${dateStr(video.created_at)}</span>
+              <span class="info-stat">&#128065; <span class="count-up" data-val="${video.views||0}">0</span></span>
+              <div style="position:relative; display:inline-block;">
+                <button onclick="likeVideo('${video.id}')" class="btn btn-sm btn-outline" style="border-color:var(--neon-pink); color:var(--neon-pink); display:flex; align-items:center; gap:6px;">
+                  &#128077; <span id="like-count" class="count-up" data-val="${video.likes||0}">0</span>
+                </button>
+                <div id="like-floating" style="position:absolute; top:0; left:50%; transform:translateX(-50%); pointer-events:none;"></div>
+              </div>
+              <button onclick="copyLink()" class="btn btn-sm btn-outline" style="border-color:var(--neon-cyan); color:var(--neon-cyan);" title="Copy Link">&#128279; Share</button>
+            </div>
           </div>
           <div class="card"><div class="card-body">
             <div style="font-size:0.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Mô Tả</div>
@@ -651,9 +689,9 @@ async function renderVideo(id) {
         </div>
         <div style="display:flex;flex-direction:column;gap:18px;">
           <div class="stat-card">
-            <div style="text-align:center;padding-bottom:18px;border-bottom:1px solid var(--border);margin-bottom:14px">
-              <div style="font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Thời gian kỷ lục</div>
-              <div class="record-time record-time-xl">${fmtMs(video.record_ms)}</div>
+            <div style="text-align:center;padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:14px; background:rgba(0,0,0,0.2); border-radius:8px; padding-top:14px;">
+              <div style="font-size:0.7rem;color:var(--neon-cyan);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;text-shadow:var(--neon-glow-cyan);">Thời gian kỷ lục</div>
+              <div class="record-time record-time-xl" style="color:var(--neon-purple); text-shadow:var(--neon-glow-purple); font-size:2rem;">${fmtMs(video.record_ms)}</div>
             </div>
             <div class="stat-row"><span class="stat-label">&#128506; Bản đồ</span><span class="badge badge-blue">${esc(video.map?.name)}</span></div>
             <div class="stat-row"><span class="stat-label">&#128663; Siêu xe</span><span class="badge badge-orange">${esc(video.car?.name)}</span></div>
