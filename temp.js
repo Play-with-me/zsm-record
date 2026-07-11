@@ -149,7 +149,7 @@ function mkCombobox(id, opts, placeholder, val='') {
       <svg class="combobox-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
       ${esc(o.label.trim())}</div>`;
   }
-  return `<div class="combobox" id="cb-${id}">
+  return `<div class="combobox" id="cb-${id}"${val ? ` data-value="${val}"` : ''}>
     <button type="button" class="combobox-trigger${!val?' placeholder':''}"
       onclick="openCB('${id}')" id="cbt-${id}">
       <span class="selected-text ${!val?'placeholder':''}">${sel?esc(sel.label):placeholder}</span>
@@ -651,7 +651,9 @@ async function loadBoard() {
         podium.innerHTML = spots.join('');
     }
     
+    const tableCard = body.closest('.card');
     if (rest.length > 0) {
+        if(tableCard) tableCard.style.display = 'block';
         body.innerHTML=rest.map(e=>{
           const canEdit = currentUser && (currentUser.id === e.player.id || currentUser.role === 'ADMIN');
           let delta = e.record_ms - top1Ms;
@@ -671,7 +673,8 @@ async function loadBoard() {
           </td>
         </tr>`}).join('');
     } else {
-        body.innerHTML='<tr><td colspan="6"><div class="empty">Chỉ có thành tích Top 3.</div></td></tr>';
+        if(tableCard) tableCard.style.display = 'none';
+        body.innerHTML='';
     }
   } catch (e) { 
       body.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">Tải bảng xếp hạng thất bại. ${e.message}</td></tr>`; 
