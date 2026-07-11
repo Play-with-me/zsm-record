@@ -835,9 +835,14 @@ async function renderProfile(userId) {
     if (isOwner) {
       const now = new Date();
       if (currentUser.last_avatar_update) {
-        const d = new Date(currentUser.last_avatar_update + 'Z');
-        const diff = now - d;
-        if (diff < 86400000) avatarWait = `(Chờ ${Math.ceil((86400000-diff)/3600000)}h)`;
+        const d = new Date(currentUser.last_avatar_update + (currentUser.last_avatar_update.endsWith('Z') ? '' : 'Z'));
+        const diff = Date.now() - d.getTime();
+        if (diff < 86400000) {
+           let h = Math.ceil((86400000 - diff) / 3600000);
+           if (h > 24) h = 24;
+           if (h < 1) h = 1;
+           avatarWait = `(Chờ ${h}h)`;
+        }
       }
       if (currentUser.last_username_update) {
         const d = new Date(currentUser.last_username_update + 'Z');
@@ -848,12 +853,12 @@ async function renderProfile(userId) {
 
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
       <div class="profile-header">
-        <div style="position:relative; display:inline-block;">
+        <div style="position:relative; display:inline-block;" ${user.avatar ? `cursor:pointer;" onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')` : '"'}>
           ${user.avatar 
             ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="80" height="80" loading="eager" decoding="async" style="object-fit:cover; border:2px solid var(--border);" />`
             : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
           }
-          ${isOwner ? `<button id="avatar-edit-btn" onclick="editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
+          ${isOwner ? `<button id="avatar-edit-btn" onclick="event.stopPropagation(); editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
         </div>
         <div class="profile-info">
           <h2 style="display:flex;align-items:center;gap:10px;">
@@ -1114,3 +1119,18 @@ window.editRecord = async function(id) {
 
 // ─── INIT ─────────────────────────────────────────────
 (async()=>{ await fetchUser(); renderNav(); router(); })();
+
+window.viewAvatar = function(url) {
+  if(!url) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'quick-view-overlay active';
+  overlay.style.zIndex = '10000';
+  overlay.innerHTML = `
+    <span class="btn-close-modal" style="position:fixed; top:20px; right:20px; font-size:2.5rem; color:#fff; cursor:pointer;" onclick="this.parentElement.remove()">&times;</span>
+    <img src="${url}" style="max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.8);" />
+  `;
+  overlay.onclick = (e) => {
+    if(e.target === overlay) overlay.remove();
+  };
+  document.body.appendChild(overlay);
+}

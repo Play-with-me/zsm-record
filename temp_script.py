@@ -1,21 +1,50 @@
 import re
 
-with open('index.html', 'r', encoding='utf-8') as f:
+with open('temp.js', 'r', encoding='utf-8') as f:
     content = f.read()
 
-new_html = """<div class="speed-bg">
-    <div class="speed-line" style="left:10%; animation-duration:1.2s; animation-delay:0s;"></div>
-    <div class="speed-line" style="left:20%; animation-duration:1.5s; animation-delay:0.3s;"></div>
-    <div class="speed-line" style="left:35%; animation-duration:0.9s; animation-delay:0.5s;"></div>
-    <div class="speed-line" style="left:50%; animation-duration:1.8s; animation-delay:0.1s;"></div>
-    <div class="speed-line" style="left:65%; animation-duration:1.3s; animation-delay:0.7s;"></div>
-    <div class="speed-line" style="left:80%; animation-duration:1.1s; animation-delay:0.2s;"></div>
-    <div class="speed-line" style="left:90%; animation-duration:1.6s; animation-delay:0.6s;"></div>
-  </div>"""
+# exact old block to replace
+old_block = """        <div style="position:relative; display:inline-block;">
+          ${user.avatar 
+            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="80" height="80" loading="eager" decoding="async" style="object-fit:cover; border:2px solid var(--border);" />`
+            : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
+          }
+          ${isOwner ? `<button id="avatar-edit-btn" onclick="editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
+        </div>"""
 
-content = re.sub(r'<!-- BACKGROUND ANIMATION -->.*?<div class="glow-orb purple"></div>\s*</div>', '<!-- BACKGROUND SPEED -->\n  ' + new_html, content, flags=re.DOTALL)
-content = re.sub(r'<!-- Speed Streaks Animation -->.*?<div class="speed-particle"[^>]*></div>\s*</div>', '', content, flags=re.DOTALL)
+new_block = """        <div style="position:relative; display:inline-block;" ${user.avatar ? `cursor:pointer;" onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')` : '"'}>
+          ${user.avatar 
+            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="80" height="80" loading="eager" decoding="async" style="object-fit:cover; border:2px solid var(--border);" />`
+            : `<span class="avatar avatar-lg">${esc(user.username[0].toUpperCase())}</span>`
+          }
+          ${isOwner ? `<button id="avatar-edit-btn" onclick="event.stopPropagation(); editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
+        </div>"""
 
-with open('index.html', 'w', encoding='utf-8') as f:
+if old_block in content:
+    content = content.replace(old_block, new_block)
+else:
+    print('Failed to find old block in temp.js')
+
+view_avatar_fn = """
+window.viewAvatar = function(url) {
+  if(!url) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'quick-view-overlay active';
+  overlay.style.zIndex = '10000';
+  overlay.innerHTML = `
+    <span class="btn-close-modal" style="position:fixed; top:20px; right:20px; font-size:2.5rem; color:#fff; cursor:pointer;" onclick="this.parentElement.remove()">&times;</span>
+    <img src="${url}" style="max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.8);" />
+  `;
+  overlay.onclick = (e) => {
+    if(e.target === overlay) overlay.remove();
+  };
+  document.body.appendChild(overlay);
+}
+"""
+if 'window.viewAvatar =' not in content:
+    content += view_avatar_fn
+
+with open('temp.js', 'w', encoding='utf-8') as f:
     f.write(content)
-print("Done")
+
+print('Updated temp.js')

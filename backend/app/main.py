@@ -9,11 +9,10 @@ from .routers import auth, videos, masters, board, users
 
 app = FastAPI(title="ZSM Record API")
 
-# Only mount local uploads folder when NOT on Cloudinary (i.e., local dev)
+# Always mount local uploads folder for fallback (even if Cloudinary is used)
 UPLOADS_DIR = "uploads"
-if not os.getenv("CLOUDINARY_URL"):
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,

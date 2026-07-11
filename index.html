@@ -141,7 +141,7 @@
       background:linear-gradient(to bottom, transparent, var(--neon-cyan), transparent);
       animation: speedLineDrop linear infinite;
       will-change: transform;
-      opacity: 0.6;
+      opacity: 0.15;
     }
     .speed-line:nth-child(even) { background:linear-gradient(to bottom, transparent, var(--neon-purple), transparent); }
     .speed-line:nth-child(3n) { background:linear-gradient(to bottom, transparent, var(--neon-pink), transparent); width:1px; }
@@ -516,6 +516,7 @@
     .profile-header {
       display:flex; align-items:center; gap:20px; padding:28px 32px;
       background:linear-gradient(135deg,rgba(15,15,35,0.8),rgba(10,5,25,0.9));
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border-radius:var(--radius-lg); border:1px solid var(--border);
     }
     .profile-info h2 { font-size:1.5rem; font-weight:800; }
