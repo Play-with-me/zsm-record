@@ -394,7 +394,7 @@ function videoCard(v) {
       <img src="${esc(img)}" alt="${esc(v.map?.name)}" width="640" height="360" loading="lazy" decoding="async"/>
       <div class="overlay"></div>
       <div class="time-badge">${fmtMs(v.record_ms)}</div>
-      <div class="play-btn" title="Xem nhanh">&#128065;</div>
+      
     </a>
     <div class="info">
       <div class="title">${esc(v.map?.name)}</div>
