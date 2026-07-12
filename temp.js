@@ -105,11 +105,28 @@ function renderNav() {
       <a href="#/upload" class="btn btn-purple btn-sm">+ Đăng Record</a>
       <div class="user-menu" id="user-menu">
         <button class="user-trigger" onclick="toggleUserMenu()">
-          ${currentUser.avatar 
-            ? `<img src="${esc(optimizedImage(currentUser.avatar, 64))}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover;"/>`
-            : `<span class="avatar avatar-sm">${esc(currentUser.username[0].toUpperCase())}</span>`
-          }
-          <span class="uname">${esc(currentUser.username)}</span> <span class="badge badge-orange" style="margin-left:8px;">🪙 ${formatCoins(currentUser.coins || 0)}</span>
+          ${(() => {
+            let frameUrl = '';
+            let nameColor = '';
+            if(currentUser.items) {
+                const eqFrames = currentUser.items.filter(i => i.is_equipped && i.item.item_type === 'avatar_frame');
+                if(eqFrames.length > 0) {
+                    try { const p = JSON.parse(eqFrames[0].item.metadata_value); frameUrl = p.icon || ''; } catch(e){}
+                }
+                const eqColors = currentUser.items.filter(i => i.is_equipped && i.item.item_type === 'name_color');
+                if(eqColors.length > 0) {
+                    try { const p = JSON.parse(eqColors[0].item.metadata_value); nameColor = p.value || p.css || ''; } catch(e){}
+                }
+            }
+            let avHtml = `<div style="position:relative; display:inline-block; width:32px; height:32px; margin-right:8px;">`;
+            avHtml += currentUser.avatar 
+              ? `<img src="${esc(optimizedImage(currentUser.avatar, 64))}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover; width:100%; height:100%; margin:0; position:absolute; top:0; left:0;"/>`
+              : `<span class="avatar avatar-sm" style="width:100%; height:100%; margin:0; position:absolute; top:0; left:0; display:flex; align-items:center; justify-content:center;">${esc(currentUser.username[0].toUpperCase())}</span>`;
+            
+            if (frameUrl) avHtml += `<img src="${frameUrl}" style="position:absolute; top:-6px; left:-6px; width:44px; height:44px; pointer-events:none; object-fit:contain; image-rendering:pixelated;" />`;
+            avHtml += `</div><span class="uname" style="${nameColor ? 'color:'+nameColor+'; text-shadow:0 0 8px '+nameColor+';' : ''}">${esc(currentUser.username)}</span>`;
+            return avHtml;
+          })()} <span class="badge badge-orange" style="margin-left:8px;">🪙 ${formatCoins(currentUser.coins || 0)}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>`;
@@ -1149,10 +1166,42 @@ window.equipShopItem = async function(userItemId) {
     else if (level >= 2) { petName = 'Gà Con'; petEmoji = '🐥'; pColor = '#4caf50'; }
 
     let badgeHtml = '';
-    if (user.role === 'ADMIN') badgeHtml = `<span class="badge-label badge-boss" title="Quản trị viên">Boss</span>`;
-    else if (publicVideos.length >= 15) badgeHtml = `<span class="badge-label badge-monster" title="Trên 15 kỷ lục">Quái Vật Drift</span>`;
-    else if (publicVideos.length >= 5) badgeHtml = `<span class="badge-label badge-pro" title="Trên 5 kỷ lục">Racer Chuyên Nghiệp</span>`;
-    else badgeHtml = `<span class="badge-label badge-rookie" title="Dưới 5 kỷ lục">Tân Binh</span>`;
+    let frameOverlayHtml = '';
+    let nameColorStyle = '';
+    
+    // Process equipped items
+    if (user.items && user.items.length > 0) {
+        const equipped = user.items.filter(i => i.is_equipped);
+        equipped.forEach(eq => {
+            let meta = eq.item.metadata_value;
+            let iconUrl = '';
+            try {
+                const p = JSON.parse(meta);
+                meta = p.value || p.css || '';
+                iconUrl = p.icon || '';
+            } catch(e) {}
+            
+            if (eq.item.item_type === 'name_color') {
+                nameColorStyle = `color:${meta}; text-shadow: 0 0 10px ${meta};`;
+            } else if (eq.item.item_type === 'avatar_frame') {
+                if(iconUrl) {
+                    frameOverlayHtml = `<img src="${iconUrl}" style="position:absolute; top:-20px; left:-20px; width:140px; height:140px; pointer-events:none; object-fit:contain; image-rendering:pixelated;" />`;
+                }
+            } else if (eq.item.item_type === 'badge') {
+                if(iconUrl) {
+                    badgeHtml += `<span class="badge-label" style="background:none; box-shadow:none; padding:0; display:inline-flex; align-items:center; justify-content:center; margin-left: 5px;" title="${esc(eq.item.name)}"><img src="${iconUrl}" style="height:35px; width:auto; image-rendering:pixelated; object-fit:contain;" onerror="this.style.display='none'"/></span>`;
+                }
+            }
+        });
+    }
+
+    if (!badgeHtml) {
+        if (user.role === 'ADMIN') badgeHtml = `<span class="badge-label badge-boss" title="Quản trị viên">Boss</span>`;
+        else if (publicVideos.length >= 15) badgeHtml = `<span class="badge-label badge-monster" title="Trên 15 kỷ lục">Quái Vật Drift</span>`;
+        else if (publicVideos.length >= 5) badgeHtml = `<span class="badge-label badge-pro" title="Trên 5 kỷ lục">Racer Chuyên Nghiệp</span>`;
+        else badgeHtml = `<span class="badge-label badge-rookie" title="Dưới 5 kỷ lục">Tân Binh</span>`;
+    }
+
 
     // Calculate cooldowns
     let avatarWait = '', nameWait = '';
@@ -1178,16 +1227,19 @@ window.equipShopItem = async function(userItemId) {
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:24px;">
       <div class="profile-header" style="display:flex; gap:24px; align-items:center; flex-wrap:wrap; background:var(--card-bg); padding:24px; border-radius:var(--radius-lg); border:1px solid rgba(255,255,255,0.05); box-shadow:var(--shadow-lg);">
         <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:8px;${user.avatar ? ' cursor:pointer;' : ''}" ${user.avatar ? `onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')"` : ''}>
-          ${user.avatar 
-            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="100" height="100" loading="eager" decoding="async" style="object-fit:cover; border:3px solid ${pColor}; box-shadow:0 0 15px ${pColor};" />`
-            : `<div style="width:100px;height:100px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:700;color:${pColor};border:3px solid ${pColor};box-shadow:0 0 15px ${pColor}">${esc(user.username[0].toUpperCase())}</div>`
-          }
+          <div style="position:relative; width:100px; height:100px;">
+            ${user.avatar 
+              ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="100" height="100" loading="eager" decoding="async" style="object-fit:cover; border:3px solid ${pColor}; box-shadow:0 0 15px ${pColor}; margin:0; position:absolute; top:0; left:0;" />`
+              : `<div style="width:100px;height:100px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:700;color:${pColor};border:3px solid ${pColor};box-shadow:0 0 15px ${pColor}; margin:0; position:absolute; top:0; left:0;">${esc(user.username[0].toUpperCase())}</div>`
+            }
+            ${frameOverlayHtml}
+          </div>
           <div style="text-align:center; font-size:1.5rem;" title="${petName}">${petEmoji} <span style="font-size:0.8rem; color:var(--text-secondary); display:block; font-weight:bold;">Lv.${level}</span></div>
           ${isOwner ? `<button id="avatar-edit-btn" onclick="event.stopPropagation(); editProfile('avatar')" class="btn btn-sm" style="position:absolute;bottom:35px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);font-size:0.7rem;padding:4px 8px;white-space:nowrap;">Đổi ảnh ${avatarWait}</button>` : ''}
         </div>
         <div class="profile-info" style="flex:1;">
           <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span ${isOwner ? `style="cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.3)" onclick="triggerFieldEdit('username')" title="Nhấp để đổi tên ${nameWait}"` : ''}>${esc(user.username)}</span>
+            <span ${isOwner ? `style="cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.3); ${nameColorStyle}" onclick="triggerFieldEdit('username')" title="Nhấp để đổi tên ${nameWait}"` : `style="${nameColorStyle}"`}>${esc(user.username)}</span>
             ${badgeHtml}
           </h2>
           <div style="margin-bottom:16px;">
