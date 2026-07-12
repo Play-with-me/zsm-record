@@ -48,6 +48,13 @@ class ShopItemBase(BaseModel):
 class ShopItemCreate(ShopItemBase):
     pass
 
+class ShopItemUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[int] = None
+    item_type: Optional[str] = None
+    metadata_value: Optional[str] = None
+
 class ShopItemResponse(ShopItemBase):
     id: str
     class Config:

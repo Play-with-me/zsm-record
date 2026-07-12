@@ -1121,7 +1121,7 @@ async function renderAdmin() {
   let tab='maps';
 
   async function renderTab() {
-    const [maps,cars,pets,users]=await Promise.all([cachedApiFetch('/maps', 300000),cachedApiFetch('/cars', 300000),cachedApiFetch('/pets', 300000),apiFetch('/users')]);
+    const [maps,cars,pets,users,shopItems]=await Promise.all([cachedApiFetch('/maps', 300000),cachedApiFetch('/cars', 300000),cachedApiFetch('/pets', 300000),apiFetch('/users'),apiFetch('/shop/items')]);
     $('app').innerHTML=`<div class="animate-in" style="display:flex;flex-direction:column;gap:20px;">
       <div><h1 style="font-size:1.7rem;font-weight:800">&#128736; Bảng Quản Trị</h1><p style="color:var(--text-muted);font-size:0.85rem">Quản lý dữ liệu hệ thống.</p></div>
       <div><div class="tabs">
