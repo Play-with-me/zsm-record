@@ -112,7 +112,13 @@ function renderNav() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>`;
-  } else {
+  else if(type==='shopItem'){
+        const n=$('s_name').value;
+        const p=$('s_price').value;
+        const t=$('s_type').value;
+        if(!n || !p || !t){toast('Vui lòng nhập đủ Tên, Giá, Loại','error');return;}
+        await apiFetch('/shop/admin/items',{method:'POST',body:JSON.stringify({name:n, description:$('s_desc').value, price:parseInt(p), item_type:t, metadata_value:$('s_meta').value})});
+      } else {
     el.innerHTML=`
       <a href="#/login" class="btn btn-outline btn-sm">Đăng nhập</a>
       <a href="#/register" class="btn btn-primary btn-sm">Đăng ký</a>`;
@@ -1130,6 +1136,7 @@ async function renderAdmin() {
         <button class="tab-btn${tab==='pets'?' active':''}" onclick="adminTab('pets')">Pets (${pets.length})</button>
         <button class="tab-btn${tab==='users'?' active':''}" onclick="adminTab('users')">Tài khoản (${users.length})</button>
           <button class="tab-btn${tab==='tournaments'?' active':''}" onclick="adminTab('tournaments')">Giải đấu</button>
+          <button class="tab-btn${tab==='shop'?' active':''}" onclick="adminTab('shop')">Vật phẩm (${shopItems.length})</button>
       </div></div>
 
       ${tab==='maps'?`
@@ -1177,6 +1184,28 @@ async function renderAdmin() {
           <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
         </tr>`).join('')}</tbody>
         </table></div>`:
+        tab==='shop'?`
+          <div class="card"><div class="card-body">
+            <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Vật phẩm mới</div>
+            <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="form-group"><label class="form-label">Tên *</label><input class="form-input" id="s_name" placeholder="VD: Khung rồng"/></div>
+              <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="s_desc" placeholder="Hiệu ứng rồng bao quanh"/></div>
+              <div style="display:flex;gap:12px;">
+                <div class="form-group" style="flex:1"><label class="form-label">Giá (Z-Coins) *</label><input class="form-input" type="number" id="s_price" value="100"/></div>
+                <div class="form-group" style="flex:1"><label class="form-label">Loại (type) *</label><select class="form-select" id="s_type">
+                  <option value="name_color">name_color</option>
+                  <option value="avatar_frame">avatar_frame</option>
+                  <option value="badge">badge</option>
+                </select></div>
+              </div>
+              <div class="form-group"><label class="form-label">Giá trị (Metadata)</label><input class="form-input" id="s_meta" placeholder="#ff0000 hoặc URL khung"/></div>
+              <button class="btn btn-primary btn-sm" onclick="adminAdd('shopItem')">+ Thêm Vật Phẩm</button>
+            </div>
+          </div></div>
+          <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Loại</th><th>Giá</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+          <tbody>${shopItems.map(s=>`<tr><td style="font-weight:600">${esc(s.name)}</td><td><span class="badge badge-purple">${esc(s.item_type)}</span></td><td>🪙 ${s.price}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${s.id}</td><td><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('shopItem','${s.id}','${esc(s.name).replace(/'/g, "\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
+          </table></div>
+        `:
         tab==='tournaments'?`
           <div class="card"><div class="card-body">
             <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Giải Đấu Mới</div>
@@ -1236,6 +1265,7 @@ window.doAdminDelete = async function(type, id, modal) {
   try {
     let endpoint = `/admin/${type}s/${id}`;
     if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
+    if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
     await apiFetch(endpoint, {method: 'DELETE'});
     toast('Đã xóa thành công!');
     modal.remove();
@@ -1361,6 +1391,7 @@ async function router() {
   if(hash==='/upload') return renderUpload();
   if(hash==='/board') return renderBoard();
   if(hash==='/admin') return renderAdmin();
+  if(hash==='/shop') return renderShop();
   if(parts[0]==='video'&&parts[1]) return renderVideo(parts[1]);
   if(parts[0]==='profile'&&parts[1]) return renderProfile(parts[1]);
   if(parts[0]==='insights') return renderInsights();
