@@ -951,7 +951,7 @@ async function renderShop() {
       html += `</div>`;
     }
     
-    $('app').innerHTML = html;
+    $('app').innerHTML = html; if(items.length > 0) setTimeout(() => window.renderShopItems(), 50);
   } catch(err) {
     $('app').innerHTML = `<div class="empty">Lỗi tải cửa hàng: ${err.message}</div>`;
   }
@@ -959,7 +959,7 @@ async function renderShop() {
 
 window.buyShopItem = async function(itemId, price) {
   if(!currentUser) { toast('Vui lòng đăng nhập để mua đồ', 'error'); return; }
-  if(currentUser.coins < price) { toast('Bạn không đủ Z-Coins! Hãy kiếm thêm bằng cách up kỷ lục.', 'error'); return; }
+  if(currentUser.role !== 'ADMIN' && currentUser.coins < price) { toast('Bạn không đủ Z-Coins! Hãy kiếm thêm bằng cách up kỷ lục.', 'error'); return; }
   if(!confirm(`Xác nhận mua vật phẩm này với giá ${price} 🪙?`)) return;
   
   try {
