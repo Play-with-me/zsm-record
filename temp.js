@@ -940,7 +940,7 @@ async function renderShop() {
           <div class="video-card shop-item" data-type="${item.item_type}">
             <div class="card-body" style="text-align:center; padding: 20px;">
               <div style="${style}">${iconUrl ? `<img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:50%"/>` : (item.item_type === 'avatar_frame' ? '' : 'A')}</div>
-              <h3 style="margin-top:10px; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</h3>`
+              <h3 style="margin-top:10px; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</h3>
             <p style="color:var(--text-dim); font-size:0.85rem; margin-top:5px; height: 40px;">${esc(item.description)}</p>
             <div style="margin-top:15px; font-weight:bold; color:var(--orange);">🪙 ${item.price}</div>
             <button class="btn btn-primary" style="margin-top:10px; width: 100%;" onclick="buyShopItem('${item.id}', ${item.price})">Mua Ngay</button>
