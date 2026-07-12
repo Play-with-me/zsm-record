@@ -4,11 +4,13 @@ from typing import Optional, List
 from .models import RoleEnum, VisibilityEnum
 
 # ----------------- Users -----------------
+# ----------------- Users -----------------
 class UserBase(BaseModel):
     username: str
     email: EmailStr
     avatar: Optional[str] = None
     exp: int = 0
+    coins: int = 0
 
 class UserCreate(UserBase):
     password: str
@@ -21,6 +23,7 @@ class UserResponse(UserBase):
     last_username_update: Optional[datetime] = None
     last_avatar_update: Optional[datetime] = None
     avatar_update_count: int = 0
+    items: List[UserItemResponse] = []
     class Config:
         from_attributes = True
 
@@ -31,6 +34,34 @@ class UserAdminUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
+    coins: Optional[int] = None
+
+
+# ----------------- Shop -----------------
+class ShopItemBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: int = 0
+    item_type: str
+    metadata_value: str
+
+class ShopItemCreate(ShopItemBase):
+    pass
+
+class ShopItemResponse(ShopItemBase):
+    id: str
+    class Config:
+        from_attributes = True
+
+class UserItemResponse(BaseModel):
+    id: str
+    user_id: str
+    item_id: str
+    is_equipped: bool
+    purchased_at: datetime
+    item: ShopItemResponse
+    class Config:
+        from_attributes = True
 
 # ----------------- Auth -----------------
 class Token(BaseModel):

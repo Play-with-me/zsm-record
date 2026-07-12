@@ -127,9 +127,10 @@ async def like_video(
         owner = await db.get(models.User, db_video.user_id)
         if owner:
             owner.exp += 10
+            owner.coins += 5
             notif = models.Notification(
                 user_id=owner.id,
-                message=f"{current_user.username} đã thích kỷ lục của bạn!"
+                message=f"{current_user.username} đã thích kỷ lục của bạn! (+5 Z-Coins)"
             )
             db.add(notif)
             

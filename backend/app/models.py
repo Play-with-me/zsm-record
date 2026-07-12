@@ -31,10 +31,34 @@ class User(Base):
     last_avatar_update = Column(DateTime, nullable=True)
     avatar_update_count = Column(Integer, default=0)
     exp = Column(Integer, default=0)
+    coins = Column(Integer, default=0)
 
     videos = relationship("Video", back_populates="user")
     comments = relationship("Comment", back_populates="user")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    items = relationship("UserItem", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
+
+class ShopItem(Base):
+    __tablename__ = "shop_items"
+    
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    price = Column(Integer, nullable=False, default=0)
+    item_type = Column(String, nullable=False) # e.g. 'name_color', 'avatar_frame', 'badge'
+    metadata_value = Column(String, nullable=False) # e.g. '#FF0000', or URL
+
+class UserItem(Base):
+    __tablename__ = "user_items"
+    
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    item_id = Column(String, ForeignKey("shop_items.id", ondelete="CASCADE"), nullable=False)
+    is_equipped = Column(Boolean, default=False)
+    purchased_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="items")
+    item = relationship("ShopItem", lazy="selectin")
 
 class Notification(Base):
     __tablename__ = "notifications"

@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, text
 from .database import engine, Base, AsyncSessionLocal
 from .models import Car, Pet, Map
-from .routers import auth, videos, masters, board, users
+from .routers import auth, videos, masters, board, users, shop
 
 app = FastAPI(title="ZSM Record API")
 
@@ -27,6 +27,7 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(videos.router, prefix="/api/v1")
 app.include_router(masters.router, prefix="/api/v1")
 app.include_router(board.router, prefix="/api/v1")
+app.include_router(shop.router, prefix="/api/v1")
 
 async def reseed_cars():
     """Wipe and re-seed cars table from cars_list.txt."""

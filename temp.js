@@ -21,6 +21,21 @@ function fmtMs(ms) {
   const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000), cs=Math.floor((ms%1000)/10);
   return `${m}:${String(s).padStart(2,'0')}:${String(cs).padStart(2,'0')}`;
 }
+
+function getUserStyles(u) {
+  let nameStyle = '';
+  let avatarStyle = '';
+  if(u.items && u.items.length > 0) {
+    u.items.forEach(ui => {
+      if(ui.is_equipped && ui.item) {
+        if(ui.item.item_type === 'name_color') nameStyle = `color: ${ui.item.metadata_value}; font-weight:bold; text-shadow: 0 0 5px ${ui.item.metadata_value}40;`;
+        if(ui.item.item_type === 'avatar_frame') avatarStyle = `border: ${ui.item.metadata_value};`;
+      }
+    });
+  }
+  return { nameStyle, avatarStyle };
+}
+
 function parseRecord(str) {
   const parts = str.split(':');
   if(parts.length === 3) {
@@ -93,7 +108,7 @@ function renderNav() {
             ? `<img src="${esc(optimizedImage(currentUser.avatar, 64))}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover;"/>`
             : `<span class="avatar avatar-sm">${esc(currentUser.username[0].toUpperCase())}</span>`
           }
-          <span class="uname">${esc(currentUser.username)}</span>
+          <span class="uname">${esc(currentUser.username)}</span> <span class="badge badge-orange" style="margin-left:8px;">🪙 ${currentUser.coins || 0}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>`;
@@ -883,7 +898,87 @@ window.editProfile = async function(field) {
   }
 };
 
-async function renderProfile(userId) {
+
+async function renderShop() {
+  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:100px;border-radius:var(--radius-lg);margin-bottom:24px"></div><div class="video-grid">${skCards(4)}</div></div>`;
+  try {
+    const items = await apiFetch('/shop/items');
+    
+    let html = `<div class="page-header animate-in">
+      <h1>Cửa Hàng 🛒</h1>
+      <p>Dùng Z-Coins 🪙 của bạn để mua vật phẩm trang trí hồ sơ.</p>
+    </div>`;
+    
+    if(!items || items.length === 0) {
+      html += `<div class="empty animate-in">Chưa có vật phẩm nào được bày bán.</div>`;
+    } else {
+      html += `<div class="video-grid animate-in" style="--cols:4">`;
+      items.forEach(item => {
+        let style = '';
+        if(item.item_type === 'name_color') {
+          style = `color: ${item.metadata_value}; font-weight:bold;`;
+        } else if(item.item_type === 'avatar_frame') {
+          style = `border: ${item.metadata_value}; border-radius:50%; width: 48px; height: 48px; display:inline-block; margin-bottom:10px;`;
+        }
+        
+        html += `
+        <div class="video-card">
+          <div class="card-body" style="text-align:center; padding: 20px;">
+            <div style="${style}">${item.item_type === 'avatar_frame' ? '' : 'A'}</div>
+            <h3 style="margin-top:10px; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</h3>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin-top:5px; height: 40px;">${esc(item.description)}</p>
+            <div style="margin-top:15px; font-weight:bold; color:var(--orange);">🪙 ${item.price}</div>
+            <button class="btn btn-primary" style="margin-top:10px; width: 100%;" onclick="buyShopItem('${item.id}', ${item.price})">Mua Ngay</button>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    
+    $('app').innerHTML = html;
+  } catch(err) {
+    $('app').innerHTML = `<div class="empty">Lỗi tải cửa hàng: ${err.message}</div>`;
+  }
+}
+
+window.buyShopItem = async function(itemId, price) {
+  if(!currentUser) { toast('Vui lòng đăng nhập để mua đồ', 'error'); return; }
+  if(currentUser.coins < price) { toast('Bạn không đủ Z-Coins! Hãy kiếm thêm bằng cách up kỷ lục.', 'error'); return; }
+  if(!confirm(`Xác nhận mua vật phẩm này với giá ${price} 🪙?`)) return;
+  
+  try {
+    const r = await fetch(`${API}/shop/buy/${itemId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi mua đồ');
+    toast('Mua thành công! Vào Hồ Sơ để trang bị nhé.');
+    clearApiCache();
+    await fetchUser();
+    renderNav();
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+};
+
+window.equipShopItem = async function(userItemId) {
+  if(!currentUser) return;
+  try {
+    const r = await fetch(`${API}/shop/equip/${userItemId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi trang bị');
+    toast('Đã cập nhật trang bị!');
+    clearApiCache();
+    await fetchUser();
+    renderProfile(currentUser.id);
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+};
+
+  async function renderProfile(userId) {
   $('app').innerHTML=`<div class="animate-in"><div class="skeleton" style="height:130px;border-radius:var(--radius-lg);margin-bottom:24px"></div><div class="video-grid">${skCards(6)}</div></div>`;
   try {
     const [videos, user] = await Promise.all([
@@ -977,6 +1072,8 @@ async function renderProfile(userId) {
       </div>` : ''}
 
       <div class="section-header" style="margin-top:20px;"><h2>Tất Cả Record</h2></div>
+
+
       <div class="video-grid">
         ${videos.length ? videos.map(videoCard).join('') : '<div class="empty">Người này chưa tải lên record nào.</div>'}
       </div>
@@ -1276,7 +1373,7 @@ window.doDelete=doDelete;
 window.loadBoard=loadBoard;
 window.confirmDelete=confirmDelete;
 
-window.adminEditUser = function(id, curName, curEmail) {
+window.adminEditUser = function(id, curName, curEmail, curCoins) {
   const overlay=document.createElement('div');
   overlay.className='modal-overlay';
   overlay.innerHTML=`<div class="modal">
@@ -1294,7 +1391,7 @@ window.adminEditUser = function(id, curName, curEmail) {
   $('euf').onsubmit=async e=>{
     e.preventDefault();
     try {
-      await apiFetch(`/users/${id}/admin`, {method:'PUT', body:JSON.stringify({username: e.target.un.value, email: e.target.em.value})});
+      await apiFetch(`/users/${id}/admin`, {method:'PUT', body:JSON.stringify({username: e.target.un.value, email: e.target.em.value, coins: parseInt(e.target.coins.value)})});
       overlay.remove(); toast('Đã cập nhật!'); window.adminTab('users');
     } catch(err){ toast(err.message, 'error'); }
   };
