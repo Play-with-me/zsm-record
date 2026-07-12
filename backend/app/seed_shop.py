@@ -93,6 +93,6 @@ async def seed_shop():
         result = await session.execute(select(User).filter(User.role == 'ADMIN'))
         admin_user = result.scalars().first()
         if admin_user:
-            admin_user.coins = 9999999999999
+            admin_user.coins = 2000000000
             await session.commit()
             print("[OK] Admin given infinite coins.")
