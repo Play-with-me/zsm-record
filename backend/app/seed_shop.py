@@ -87,3 +87,12 @@ async def seed_shop():
             print("[OK] Done seeding shop items.")
         else:
             print("[OK] Shop items already exist.")
+            
+        # Give admin infinite coins
+        from .models import User
+        result = await session.execute(select(User).filter(User.role == 'ADMIN'))
+        admin_user = result.scalars().first()
+        if admin_user:
+            admin_user.coins = 9999999999999
+            await session.commit()
+            print("[OK] Admin given infinite coins.")
