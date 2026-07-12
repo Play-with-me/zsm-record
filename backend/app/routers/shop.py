@@ -8,12 +8,14 @@ from .auth import get_current_user, get_current_admin
 router = APIRouter(prefix="/shop", tags=["shop"])
 
 from ..seed_shop import seed_shop
+from ..update_icons import update
 
 @router.get("/seed_manual")
 async def seed_manual():
     try:
         await seed_shop()
-        return {"status": "ok", "message": "Seeded successfully"}
+        await update()
+        return {"status": "ok", "message": "Seeded and updated icons successfully"}
     except Exception as e:
         import traceback
         return {"status": "error", "message": str(e), "trace": traceback.format_exc()}
