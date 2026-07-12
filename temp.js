@@ -1341,7 +1341,7 @@ async function renderAdmin() {
             </div>
           </div></div>
           <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Loại</th><th>Giá</th><th>Mã ID</th><th>Hành động</th></tr></thead>
-          <tbody>${shopItems?.map(s=>`<tr><td style="font-weight:600">${esc(s.name)}</td><td><span class="badge badge-purple">${esc(s.item_type)}</span></td><td>🪙 ${s.price}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${s.id}</td><td><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('shopItem','${s.id}','${esc(s.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')||''}</tbody>
+          <tbody>${shopItems?.map(s=>`<tr><td style="font-weight:600">${esc(s.name)}</td><td><span class="badge badge-purple">${esc(s.item_type)}</span></td><td>🪙 ${s.price}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${s.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem;margin-right:5px;\" onclick=\"adminEdit('shopItem','${s.id}', '${encodeURIComponent(JSON.stringify(s))}')\">✏️</button><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('shopItem','${s.id}','${esc(s.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')||''}</tbody>
           </table></div>
         `:
         tab==='tournaments'?`
@@ -1403,6 +1403,7 @@ window.doAdminDelete = async function(type, id, modal) {
   try {
     let endpoint = `/admin/${type}s/${id}`;
     if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
+      if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
     if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
     await apiFetch(endpoint, {method: 'DELETE'});
     toast('Đã xóa thành công!');
@@ -1442,6 +1443,20 @@ window.adminEdit = async function(type, id, itemObj) {
     formHtml = `
       <div class="form-group"><label>Username</label><input class="form-input" value="${esc(item.username)}" disabled/></div>
       <div class="form-group"><label>Role</label><select id="edit_role" class="form-select"><option value="USER" ${item.role==='USER'?'selected':''}>USER</option><option value="ADMIN" ${item.role==='ADMIN'?'selected':''}>ADMIN</option></select></div>
+    `;
+    } else if(type==='shopItem') {
+    let m = {value:'', icon:''};
+    try { 
+      let p = JSON.parse(item.metadata_value); 
+      m.value = p.value || ''; 
+      m.icon = p.icon || '';
+    } catch(e) { m.value = item.metadata_value; }
+    formHtml = `
+      <div class="form-group"><label>Tên</label><input id="edit_name" class="form-input" value="${esc(item.name)}"/></div>
+      <div class="form-group"><label>Mô tả</label><input id="edit_desc" class="form-input" value="${esc(item.description)}"/></div>
+      <div class="form-group"><label>Giá (Z-Coins)</label><input id="edit_price" type="number" class="form-input" value="${item.price}"/></div>
+      <div class="form-group"><label>URL Icon (Dán link Pinterest, Imgur...)</label><input id="edit_icon" class="form-input" value="${esc(m.icon)}"/></div>
+      <input type="hidden" id="edit_rawmeta" value="${esc(m.value)}"/>
     `;
   } else if(type==='tournament') {
     formHtml = `
@@ -1483,6 +1498,7 @@ window.doAdminEdit = async function(type, id, modal) {
     
     let endpoint = `/admin/${type}s/${id}`;
     if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
+      if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
     
     await apiFetch(endpoint, {method: 'PUT', body: JSON.stringify(bodyData)});
     toast('Đã cập nhật thành công!');
