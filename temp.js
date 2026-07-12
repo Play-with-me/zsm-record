@@ -1168,12 +1168,13 @@ async function renderAdmin() {
         <tbody>${pets.map(p=>`<tr><td style="font-weight:600">${esc(p.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${p.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('pet','${p.id}', '${encodeURIComponent(JSON.stringify(p))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('pet','${p.id}','${esc(p.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
         </table></div>`:
       tab==='users'?`
-        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Số dư</th><th>Mã ID</th><th>Hành động</th></tr></thead>
         <tbody>${users.map(u=>`<tr>
           <td>${u.avatar?`<img src="${esc(optimizedImage(u.avatar, 48))}" width="28" height="28" loading="lazy" decoding="async" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>`:`<div class="avatar avatar-sm">${esc(u.username[0].toUpperCase())}</div>`}</td>
           <td style="font-weight:600">${esc(u.username)}</td>
           <td style="color:var(--text-dim)">${esc(u.email)}</td>
           <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
+          <td>🪙 ${u.coins||0}</td>
           <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
           <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
         </tr>`).join('')}</tbody>

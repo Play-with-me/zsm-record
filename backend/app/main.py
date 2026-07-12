@@ -169,10 +169,17 @@ async def reseed_maps():
 
 
 
+from . import seed_shop
+
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        
+    try:
+        await seed_shop.seed_shop()
+    except Exception as e:
+        print(f"Error seeding shop: {e}")
         
     try:
         async with engine.begin() as conn:
