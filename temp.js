@@ -937,8 +937,9 @@ async function renderShop() {
           }
           
           html += `
-          <div class="video-card shop-item" data-type="${item.item_type}">
-            <div class="card-body" style="text-align:center; padding: 20px;">
+          <div class="video-card shop-item" data-type="${item.item_type}" style="transition: transform 0.3s, box-shadow 0.3s; position:relative; overflow:hidden;">
+            <div class="card-body" style="text-align:center; padding: 20px; position:relative; z-index:1;" onmouseenter="this.parentElement.style.transform='scale(1.05)'; this.parentElement.style.boxShadow='0 10px 20px rgba(0,0,0,0.5)'" onmouseleave="this.parentElement.style.transform='scale(1)'; this.parentElement.style.boxShadow='none'">
+              <div style="position:absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle, ${item.item_type==='avatar_frame'?'rgba(138,43,226,0.1)':'rgba(255,255,255,0.05)'} 0%, transparent 70%); z-index:-1; pointer-events:none;"></div>
               <div style="${style}">${iconUrl ? `<img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:50%"/>` : (item.item_type === 'avatar_frame' ? '' : 'A')}</div>
               <h3 style="margin-top:10px; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</h3>
             <p style="color:var(--text-dim); font-size:0.85rem; margin-top:5px; height: 40px;">${esc(item.description)}</p>
@@ -1208,7 +1209,8 @@ async function renderAdmin() {
                   <option value="badge">badge</option>
                 </select></div>
               </div>
-              <div class="form-group"><label class="form-label">Giá trị (Metadata)</label><input class="form-input" id="s_meta" placeholder="#ff0000 hoặc URL khung"/></div>
+              <div class="form-group"><label class="form-label">Giá trị (Metadata)</label><input class="form-input" id="s_meta" placeholder="#ff0000 hoặc CSS box-shadow..."/></div>
+                <div class="form-group"><label class="form-label">URL Icon (Tùy chọn)</label><input class="form-input" id="s_icon" placeholder="https://api.iconify..."/></div>
               <button class="btn btn-primary btn-sm" onclick="adminAdd('shopItem')">+ Thêm Vật Phẩm</button>
             </div>
           </div></div>

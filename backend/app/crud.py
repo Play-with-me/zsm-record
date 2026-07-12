@@ -301,10 +301,10 @@ async def buy_item(db: AsyncSession, user_id: str, item_id: str):
     if result.scalar_one_or_none():
         return False, "Bạn đã sở hữu vật phẩm này rồi"
         
-    if user.coins < item.price:
-        return False, "Không đủ Z-Coins"
-        
-    user.coins -= item.price
+    if user.role != 'ADMIN':
+          if user.coins < item.price:
+              return False, "Không đủ Z-Coins"
+          user.coins -= item.price
     user_item = models.UserItem(user_id=user_id, item_id=item_id, is_equipped=False)
     db.add(user_item)
     await db.commit()
