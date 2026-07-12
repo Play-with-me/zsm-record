@@ -131,6 +131,10 @@ function toggleUserMenu() {
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Hồ sơ của tôi
     </button>
+      <button class="dd-item" onclick="navigate('/inventory');closeMenu()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><path d="M4 10h16M10 16h4M4 4h16v6H4z"/></svg>
+        Túi đồ 🎒
+      </button>
     ${currentUser.role==='ADMIN'?`<button class="dd-item" onclick="navigate('/admin');closeMenu()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
       Trang Quản Trị
@@ -1031,9 +1035,8 @@ window.editProfile = async function(field) {
 window.buyShopItem = async function(itemId, price) {
   if(!currentUser) { toast('Vui lòng đăng nhập để mua đồ', 'error'); return; }
   if(currentUser.role !== 'ADMIN' && currentUser.coins < price) { toast('Bạn không đủ Z-Coins! Hãy kiếm thêm bằng cách up kỷ lục.', 'error'); return; }
-  if(!confirm(`Xác nhận mua vật phẩm này với giá ${price} 🪙?`)) return;
-  
-  try {
+  customConfirm(`Bạn có chắc muốn mua vật phẩm này với giá ${formatCoins(price)} Z-Coins?`, async () => {
+    try {
     const r = await fetch(`${API}/shop/buy/${itemId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -1043,9 +1046,12 @@ window.buyShopItem = async function(itemId, price) {
     clearApiCache();
     await fetchUser();
     renderNav();
-  } catch(e) {
-    toast(e.message, 'error');
-  }
+  
+      renderShop();
+    } catch(e) {
+      toast(e.message, 'error');
+    }
+  });
 };
 
 
