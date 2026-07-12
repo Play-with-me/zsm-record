@@ -1,4 +1,4 @@
-function formatCoins(n){if(n>=1e9)return(n/1e9).toFixed(1).replace('.0','')+'b';if(n>=1e6)return(n/1e6).toFixed(1).replace('.0','')+'m';if(n>=1e3)return(n/1e3).toFixed(1).replace('.0','')+'k';return n;}
+function formatCoins(n, exact=false){if(exact)return new Intl.NumberFormat('vi-VN').format(n);if(n>=1e9)return(n/1e9).toFixed(1).replace(/\.0$/,'')+'b';if(n>=1e6)return(n/1e6).toFixed(1).replace(/\.0$/,'')+'m';if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.0$/,'')+'k';return new Intl.NumberFormat('vi-VN').format(n);}
 
 const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
   ? 'http://localhost:8001/api/v1' 
@@ -109,7 +109,7 @@ function renderNav() {
             ? `<img src="${esc(optimizedImage(currentUser.avatar, 64))}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover;"/>`
             : `<span class="avatar avatar-sm">${esc(currentUser.username[0].toUpperCase())}</span>`
           }
-          <span class="uname">${esc(currentUser.username)}</span> <span class="badge badge-orange" style="margin-left:8px;">🪙 ${currentUser.coins || 0}</span>
+          <span class="uname">${esc(currentUser.username)}</span> <span class="badge badge-orange" style="margin-left:8px;">🪙 ${formatCoins(currentUser.coins || 0)}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>`;
@@ -946,7 +946,7 @@ window.editProfile = async function(field) {
         <div class="card-body" style="text-align:center; padding: 20px; position:relative; z-index:1;" onmouseenter="this.parentElement.style.transform='scale(1.05)'; this.parentElement.style.boxShadow='0 10px 20px rgba(0,0,0,0.5)'" onmouseleave="this.parentElement.style.transform='scale(1)'; this.parentElement.style.boxShadow='none'">
           <div style="position:absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle, ${item.item_type==='avatar_frame'?'rgba(138,43,226,0.1)':'rgba(255,255,255,0.05)'} 0%, transparent 70%); z-index:-1; pointer-events:none;"></div>
           
-          <div style="width:60px; height:60px; margin:0 auto; display:flex; justify-content:center; align-items:center; ${item.item_type==='avatar_frame'?'border-radius:50%;':''} ${style}">
+          <div style="width:80px; height:80px; margin:0 auto; display:flex; justify-content:center; align-items:center; ${item.item_type==='avatar_frame'?'border-radius:50%;':''} ${style}">
             ${iconUrl ? `<img src="${iconUrl}" style="max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;" onerror="this.style.display='none'"/>` : (item.item_type === 'avatar_frame' ? '' : 'A')}
           </div>
           
@@ -983,6 +983,7 @@ window.editProfile = async function(field) {
       let html = `<div class="page-header animate-in">
         <h1>Cửa Hàng 🛍️</h1>
         <p>Dùng Z-Coins 🪙 của bạn để mua vật phẩm trang trí hồ sơ.</p>
+        <button class="btn btn-primary" onclick="openInventory()" style="margin-top:10px; font-weight:bold;">🎒 Túi Đồ Của Tôi</button>
       </div>`;
       
       if(!items || items.length === 0) {
@@ -1192,6 +1193,7 @@ window.equipShopItem = async function(userItemId) {
           <div style="margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-secondary);margin-bottom:4px;">
               <span>EXP: ${exp}</span>
+              <span>Z-Coins: 🪙 ${formatCoins(user.coins || 0, true)}</span>
               <span>Tiếp theo: ${nextLevelExp}</span>
             </div>
             <div style="width:100%;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
@@ -1316,7 +1318,7 @@ async function renderAdmin() {
           <td style="font-weight:600">${esc(u.username)}</td>
           <td style="color:var(--text-dim)">${esc(u.email)}</td>
           <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
-          <td>🪙 ${u.coins||0}</td>
+          <td>🪙 ${formatCoins(u.coins||0)}</td>
           <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
           <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
         </tr>`).join('')}</tbody>
@@ -1341,7 +1343,7 @@ async function renderAdmin() {
             </div>
           </div></div>
           <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Loại</th><th>Giá</th><th>Mã ID</th><th>Hành động</th></tr></thead>
-          <tbody>${shopItems?.map(s=>`<tr><td style="font-weight:600">${esc(s.name)}</td><td><span class="badge badge-purple">${esc(s.item_type)}</span></td><td>🪙 ${s.price}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${s.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem;margin-right:5px;\" onclick=\"adminEdit('shopItem','${s.id}', '${encodeURIComponent(JSON.stringify(s))}')\">✏️</button><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('shopItem','${s.id}','${esc(s.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')||''}</tbody>
+          <tbody>${shopItems?.map(s=>`<tr><td style="font-weight:600">${esc(s.name)}</td><td><span class="badge badge-purple">${esc(s.item_type)}</span></td><td>🪙 ${formatCoins(s.price)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${s.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem;margin-right:5px;\" onclick=\"adminEdit('shopItem','${s.id}', '${encodeURIComponent(JSON.stringify(s))}')\">✏️</button><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('shopItem','${s.id}','${esc(s.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')||''}</tbody>
           </table></div>
         `:
         tab==='tournaments'?`
@@ -1985,3 +1987,97 @@ document.addEventListener('click', (e) => {
 setInterval(() => {
   if (currentUser) fetchNotifications();
 }, 30000);
+
+
+window.openInventory = async function() {
+  if (!currentUser) { toast('Vui lòng đăng nhập', 'error'); return; }
+  
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-lg); padding:20px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-lg);';
+  
+  modal.innerHTML = `<h2 style="margin-bottom:15px;text-align:center;color:var(--neon-blue);">🎒 Túi Đồ Của Tôi</h2><div id="inv-loading" style="text-align:center;padding:20px;">Đang tải...</div>`;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
+  
+  try {
+    const items = await apiFetch('/shop/my-items');
+    if (!items || items.length === 0) {
+      modal.innerHTML = `<h2 style="margin-bottom:15px;text-align:center;color:var(--neon-blue);">🎒 Túi Đồ Của Tôi</h2><div style="text-align:center;padding:20px;color:var(--text-dim);">Túi đồ trống. Hãy mua đồ trong cửa hàng nhé!</div>`;
+    } else {
+      let invHtml = `<h2 style="margin-bottom:15px;text-align:center;color:var(--neon-blue);">🎒 Túi Đồ Của Tôi</h2>`;
+      invHtml += `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:15px;">`;
+      
+      items.forEach(ui => {
+        const item = ui.item;
+        let meta = item.metadata_value;
+        let style = '', iconUrl = '';
+        try {
+          const p = JSON.parse(meta);
+          meta = p.value || p.css || '';
+          iconUrl = p.icon || '';
+        } catch(e) {}
+        
+        if(item.item_type === 'name_color') style = `color:${meta}`;
+        if(item.item_type === 'avatar_frame') style = `box-shadow:${meta}`;
+        if(item.item_type === 'badge') style = 'font-size:2rem';
+        
+        invHtml += `<div style="background:var(--bg-dark); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius-md); padding:15px; text-align:center; position:relative;">
+          <div style="width:80px; height:80px; margin:0 auto 10px; display:flex; justify-content:center; align-items:center; ${item.item_type==='avatar_frame'?'border-radius:50%;':''} ${style}">
+            ${iconUrl ? `<img src="${iconUrl}" style="max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;" onerror="this.style.display='none'"/>` : (item.item_type === 'avatar_frame' ? '' : 'A')}
+          </div>
+          <div style="font-size:0.9rem; font-weight:bold; margin-bottom:5px; height:36px; overflow:hidden; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</div>
+          <button class="btn ${ui.is_equipped ? 'btn-danger' : 'btn-primary'} btn-sm" style="width:100%;" onclick="equipItem('${ui.id}', this)">
+            ${ui.is_equipped ? 'Tháo ra' : 'Sử dụng'}
+          </button>
+        </div>`;
+      });
+      
+      invHtml += `</div>`;
+      modal.innerHTML = invHtml;
+    }
+  } catch(e) {
+    modal.innerHTML = `<h2 style="margin-bottom:15px;text-align:center;color:var(--neon-blue);">🎒 Túi Đồ Của Tôi</h2><div style="text-align:center;padding:20px;color:red;">Lỗi tải túi đồ: ${e.message}</div>`;
+  }
+};
+
+window.equipItem = async function(userItemId, btn) {
+  try {
+    const prevText = btn.innerText;
+    btn.innerText = '...';
+    btn.disabled = true;
+    const r = await fetch(`${API}/shop/equip/${userItemId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+    if(!r.ok) throw new Error((await r.json()).detail || 'Lỗi trang bị');
+    
+    toast('Đã cập nhật trang bị!');
+    clearApiCache();
+    await fetchUser();
+    renderNav();
+    if(window.location.hash.startsWith('#profile')) {
+      const parts = window.location.hash.split('/');
+      if(parts[1]) renderProfile(parts[1]);
+    }
+    
+    // Refresh inventory modal silently by re-clicking (or we can just close it, but refreshing is better)
+    btn.innerText = prevText === 'Sử dụng' ? 'Tháo ra' : 'Sử dụng';
+    if(btn.innerText === 'Tháo ra') {
+      btn.className = 'btn btn-danger btn-sm';
+    } else {
+      btn.className = 'btn btn-primary btn-sm';
+    }
+    btn.disabled = false;
+    
+  } catch(e) {
+    toast(e.message, 'error');
+    btn.disabled = false;
+    btn.innerText = 'Lỗi';
+  }
+};
