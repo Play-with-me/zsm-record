@@ -899,65 +899,117 @@ window.editProfile = async function(field) {
 };
 
 
-async function renderShop() {
-  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:100px;border-radius:var(--radius-lg);margin-bottom:24px"></div><div class="video-grid">${skCards(4)}</div></div>`;
-  try {
-    const items = await apiFetch('/shop/items');
-    
-    let html = `<div class="page-header animate-in">
-      <h1>Cửa Hàng 🛒</h1>
-      <p>Dùng Z-Coins 🪙 của bạn để mua vật phẩm trang trí hồ sơ.</p>
-    </div>`;
-    
-    if(!items || items.length === 0) {
-      html += `<div class="empty animate-in">Chưa có vật phẩm nào được bày bán.</div>`;
-    } else {
-      let filterHtml = `<div class="shop-filters" style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn-outline active" onclick="filterShop('all', this)">Tất cả</button>
-          <button class="btn btn-outline" onclick="filterShop('name_color', this)">Màu tên</button>
-          <button class="btn btn-outline" onclick="filterShop('avatar_frame', this)">Khung Avatar</button>
-          <button class="btn btn-outline" onclick="filterShop('badge', this)">Huy hiệu</button>
-        </div>`;
-        html = html.replace('</div>', '</div>' + filterHtml);
-        html += `<div class="video-grid animate-in" id="shop-grid" style="--cols:4">`;
-        items.forEach(item => {
-          let style = '';
-          let metaVal = item.metadata_value;
-          let iconUrl = '';
-          try {
-            const m = JSON.parse(item.metadata_value);
-            metaVal = m.value;
-            iconUrl = m.icon;
-          } catch(e) {}
 
-          if(item.item_type === 'name_color') {
-            style = `color: ${metaVal}; font-weight:bold;`;
-          } else if(item.item_type === 'avatar_frame') {
-            style = `box-shadow: ${metaVal}; border-radius:50%; width: 48px; height: 48px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:10px;`;
-          }
-          
-          html += `
-          <div class="video-card shop-item" data-type="${item.item_type}" style="transition: transform 0.3s, box-shadow 0.3s; position:relative; overflow:hidden;">
-            <div class="card-body" style="text-align:center; padding: 20px; position:relative; z-index:1;" onmouseenter="this.parentElement.style.transform='scale(1.05)'; this.parentElement.style.boxShadow='0 10px 20px rgba(0,0,0,0.5)'" onmouseleave="this.parentElement.style.transform='scale(1)'; this.parentElement.style.boxShadow='none'">
-              <div style="position:absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle, ${item.item_type==='avatar_frame'?'rgba(138,43,226,0.1)':'rgba(255,255,255,0.05)'} 0%, transparent 70%); z-index:-1; pointer-events:none;"></div>
-              <div style="${style}">${iconUrl ? `<img src="${iconUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:50%"/>` : (item.item_type === 'avatar_frame' ? '' : 'A')}</div>
-              <h3 style="margin-top:10px; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</h3>
-            <p style="color:var(--text-dim); font-size:0.85rem; margin-top:5px; height: 40px;">${esc(item.description)}</p>
-            <div style="margin-top:15px; font-weight:bold; color:var(--orange);">🪙 ${item.price}</div>
-            <button class="btn btn-primary" style="margin-top:10px; width: 100%;" onclick="buyShopItem('${item.id}', ${item.price})">Mua Ngay</button>
-          </div>
-        </div>`;
-      });
-      html += `</div>`;
+  window.currentShopItems = [];
+  window.currentShopFilter = 'all';
+  window.currentShopSort = 'default';
+
+  window.renderShopItems = function() {
+    let items = [...window.currentShopItems];
+    if(window.currentShopFilter !== 'all') {
+      items = items.filter(i => i.item_type === window.currentShopFilter);
+    }
+    if(window.currentShopSort === 'price_asc') items.sort((a,b) => a.price - b.price);
+    if(window.currentShopSort === 'price_desc') items.sort((a,b) => b.price - a.price);
+    if(window.currentShopSort === 'rarity') {
+      const getRarity = name => {
+        if(name.includes('Đỏ')) return 5;
+        if(name.includes('Vàng')) return 4;
+        if(name.includes('Tím')) return 3;
+        if(name.includes('Xanh Dương')) return 2;
+        return 1;
+      };
+      items.sort((a,b) => getRarity(b.name) - getRarity(a.name));
     }
     
-    $('app').innerHTML = html; if(items.length > 0) setTimeout(() => window.renderShopItems(), 50);
-  } catch(err) {
-    $('app').innerHTML = `<div class="empty">Lỗi tải cửa hàng: ${err.message}</div>`;
-  }
-}
+    let html = '';
+    items.forEach(item => {
+      let meta = item.metadata_value;
+      let style = '', iconUrl = '';
+      try {
+        const p = JSON.parse(meta);
+        meta = p.value || p.css || '';
+        iconUrl = p.icon || '';
+      } catch(e) {}
+      if(item.item_type === 'name_color') style = `color:${meta}`;
+      if(item.item_type === 'avatar_frame') {
+        style = `box-shadow:${meta}`;
+      }
+      if(item.item_type === 'badge') style = 'font-size:2rem';
+      
+      html += `<div class="video-card shop-item" data-type="${item.item_type}" style="transition: transform 0.3s, box-shadow 0.3s; position:relative; overflow:hidden;">
+        <div class="card-body" style="text-align:center; padding: 20px; position:relative; z-index:1;" onmouseenter="this.parentElement.style.transform='scale(1.05)'; this.parentElement.style.boxShadow='0 10px 20px rgba(0,0,0,0.5)'" onmouseleave="this.parentElement.style.transform='scale(1)'; this.parentElement.style.boxShadow='none'">
+          <div style="position:absolute; top:-50%; left:-50%; width:200%; height:200%; background: radial-gradient(circle, ${item.item_type==='avatar_frame'?'rgba(138,43,226,0.1)':'rgba(255,255,255,0.05)'} 0%, transparent 70%); z-index:-1; pointer-events:none;"></div>
+          
+          <div style="width:60px; height:60px; margin:0 auto; display:flex; justify-content:center; align-items:center; ${item.item_type==='avatar_frame'?'border-radius:50%;':''} ${style}">
+            ${iconUrl ? `<img src="${iconUrl}" style="max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;" onerror="this.style.display='none'"/>` : (item.item_type === 'avatar_frame' ? '' : 'A')}
+          </div>
+          
+          <h3 style="margin-top:10px; ${item.item_type === 'name_color' ? style : ''}">${esc(item.name)}</h3>
+          <p style="color:var(--text-dim); font-size:0.85rem; margin-top:5px; height: 40px;">${esc(item.description)}</p>
+          <div style="margin-top:15px; font-weight:bold; color:var(--orange);">🪙 ${formatCoins(item.price)}</div>
+          <button class="btn btn-primary" style="margin-top:10px; width: 100%;" onclick="buyShopItem('${item.id}', ${item.price})">Mua Ngay</button>
+        </div>
+      </div>`;
+    });
+    
+    const grid = document.getElementById('shop-grid');
+    if(grid) grid.innerHTML = html;
+  };
 
-window.customConfirm = function(msg, onConfirm) {
+  window.filterShop = function(type, btn) {
+    window.currentShopFilter = type;
+    const btns = btn.parentElement.querySelectorAll('button');
+    btns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window.renderShopItems();
+  };
+  
+  window.sortShop = function(sortType) {
+    window.currentShopSort = sortType;
+    window.renderShopItems();
+  };
+
+  async function renderShop() {
+    $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:100px;border-radius:var(--radius-lg);margin-bottom:24px"></div><div class="video-grid">${skCards(4)}</div></div>`;
+    try {
+      const items = await apiFetch('/shop/items');
+      
+      let html = `<div class="page-header animate-in">
+        <h1>Cửa Hàng 🛍️</h1>
+        <p>Dùng Z-Coins 🪙 của bạn để mua vật phẩm trang trí hồ sơ.</p>
+      </div>`;
+      
+      if(!items || items.length === 0) {
+        html += `<div class="empty animate-in">Chưa có vật phẩm nào được bày bán.</div>`;
+      } else {
+        window.currentShopItems = items;
+        html += `<div class="shop-filters" style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-outline active" onclick="filterShop('all', this)">Tất cả</button>
+              <button class="btn btn-outline" onclick="filterShop('name_color', this)">Màu tên</button>
+              <button class="btn btn-outline" onclick="filterShop('avatar_frame', this)">Khung Avatar</button>
+              <button class="btn btn-outline" onclick="filterShop('badge', this)">Huy hiệu</button>
+            </div>
+            <select class="form-select" style="width:auto" onchange="sortShop(this.value)">
+              <option value="default">Sắp xếp mặc định</option>
+              <option value="price_asc">Giá: Thấp đến Cao</option>
+              <option value="price_desc">Giá: Cao đến Thấp</option>
+              <option value="rarity">Độ hiếm</option>
+            </select>
+          </div>
+          <div class="video-grid animate-in" id="shop-grid" style="--cols:4"></div>`;
+      }
+      
+      $('app').innerHTML = html; 
+      if(items && items.length > 0) setTimeout(() => window.renderShopItems(), 50);
+    } catch(err) {
+      $('app').innerHTML = `<div class="empty">Lỗi tải cửa hàng: ${err.message}</div>`;
+    }
+  }
+
+
+  window.customConfirm = function(msg, onConfirm) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
   overlay.innerHTML = `
@@ -1474,18 +1526,7 @@ async function router() {
   if(hash==='/login') return renderLogin();
   if(hash==='/register') return renderRegister();
 
-  window.filterShop = function(type, btn) {
-    const grid = document.getElementById('shop-grid');
-    if(!grid) return;
-    const items = grid.querySelectorAll('.shop-item');
-    items.forEach(el => {
-      if(type === 'all' || el.dataset.type === type) el.style.display = 'block';
-      else el.style.display = 'none';
-    });
-    const btns = btn.parentElement.querySelectorAll('button');
-    btns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  };
+  
 
   if(hash==='/upload') return renderUpload();
   if(hash==='/board') return renderBoard();
