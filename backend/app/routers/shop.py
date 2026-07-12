@@ -7,6 +7,17 @@ from .auth import get_current_user, get_current_admin
 
 router = APIRouter(prefix="/shop", tags=["shop"])
 
+from ..seed_shop import seed_shop
+
+@router.get("/seed_manual")
+async def seed_manual():
+    try:
+        await seed_shop()
+        return {"status": "ok", "message": "Seeded successfully"}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "message": str(e), "trace": traceback.format_exc()}
+
 @router.get("/items", response_model=List[schemas.ShopItemResponse])
 async def read_shop_items(db: AsyncSession = Depends(get_db)):
     return await crud.get_shop_items(db)

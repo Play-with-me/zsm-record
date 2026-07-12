@@ -1,6 +1,6 @@
 import asyncio
 from sqlalchemy.future import select
-from .database import engine, async_session
+from .database import engine, AsyncSessionLocal
 from .models import ShopItem
 from uuid import uuid4
 
@@ -67,7 +67,7 @@ SHOP_ITEMS = [
 ]
 
 async def seed_shop():
-    async with async_session() as session:
+    async with AsyncSessionLocal() as session:
         # Check if shop has items
         result = await session.execute(select(ShopItem).limit(1))
         first = result.scalars().first()
