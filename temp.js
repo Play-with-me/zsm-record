@@ -1457,8 +1457,8 @@ window.doAdminDelete = async function(type, id, modal) {
   try {
     let endpoint = `/admin/${type}s/${id}`;
     if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
-      if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
     if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
+    if(type==='user') endpoint = `/users/admin/users/${id}`;
     await apiFetch(endpoint, {method: 'DELETE'});
     toast('Đã xóa thành công!');
     modal.remove();

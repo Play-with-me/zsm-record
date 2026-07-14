@@ -233,6 +233,9 @@ async def delete_user_admin(
 ):
     if current_user.role != models.RoleEnum.ADMIN:
         raise HTTPException(status_code=403, detail="Forbidden")
+        
+    if current_user.id == u_id:
+        raise HTTPException(status_code=400, detail="Không thể tự xóa chính mình")
     
     from sqlalchemy.future import select
     from sqlalchemy import delete
