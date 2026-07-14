@@ -1377,7 +1377,10 @@ async function renderAdmin() {
         </table></div>`:
         tab==='shop'?`
           <div class="card"><div class="card-body">
-            <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Vật phẩm mới</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-size:0.85rem;font-weight:700;">Thêm Vật phẩm mới</div>
+              <button class="btn btn-danger btn-sm" onclick="if(confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ vật phẩm trong Shop?')) clearAllShopItems()">Xóa Tất Cả Vật Phẩm</button>
+            </div>
             <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
               <div class="form-group"><label class="form-label">Tên *</label><input class="form-input" id="s_name" placeholder="VD: Khung rồng"/></div>
               <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="s_desc" placeholder="Hiệu ứng rồng bao quanh"/></div>
@@ -2131,5 +2134,16 @@ window.equipItem = async function(userItemId, btn) {
     toast(e.message, 'error');
     btn.disabled = false;
     btn.innerText = 'Lỗi';
+  }
+};
+
+window.clearAllShopItems = async function() {
+  try {
+    await apiFetch('/shop/admin/items/clear_all', {method: 'DELETE'});
+    toast('Đã xóa toàn bộ vật phẩm!');
+    clearApiCache();
+    if(window.location.hash === '#/admin') setTimeout(()=>loadAdminData(), 500);
+  } catch(e) {
+    toast(e.message, 'error');
   }
 };

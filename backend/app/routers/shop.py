@@ -74,6 +74,17 @@ async def update_shop_item(
         raise HTTPException(status_code=404, detail="Item not found")
     return updated
 
+@router.delete("/admin/items/clear_all")
+async def clear_all_shop_items(
+    db: AsyncSession = Depends(get_db),
+    current_admin: models.User = Depends(get_current_admin)
+):
+    from sqlalchemy import delete
+    await db.execute(delete(models.UserItem))
+    await db.execute(delete(models.ShopItem))
+    await db.commit()
+    return {"detail": "All items deleted"}
+
 @router.delete("/admin/items/{item_id}")
 async def delete_shop_item(
     item_id: str,
