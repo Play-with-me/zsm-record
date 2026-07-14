@@ -1185,11 +1185,11 @@ window.equipShopItem = async function(userItemId) {
                 nameColorStyle = `color:${meta}; text-shadow: 0 0 10px ${meta};`;
             } else if (eq.item.item_type === 'avatar_frame') {
                 if(iconUrl) {
-                    frameOverlayHtml = `<img src="${iconUrl}" style="position:absolute; top:-20px; left:-20px; width:140px; height:140px; pointer-events:none; object-fit:contain; image-rendering:pixelated;" />`;
+                    frameOverlayHtml = `<img src="${iconUrl}" style="position:absolute; top:-20px; left:-20px; width:140px; height:140px; pointer-events:none; object-fit:contain; image-rendering:pixelated; mix-blend-mode: screen;" />`;
                 }
             } else if (eq.item.item_type === 'badge') {
                 if(iconUrl) {
-                    badgeHtml += `<span class="badge-label" style="background:none; box-shadow:none; padding:0; display:inline-flex; align-items:center; justify-content:center; margin-left: 5px;" title="${esc(eq.item.name)}"><img src="${iconUrl}" style="height:35px; width:auto; image-rendering:pixelated; object-fit:contain;" onerror="this.style.display='none'"/></span>`;
+                    badgeHtml += `<span class="badge-label" style="background:none; box-shadow:none; padding:0; display:inline-flex; align-items:center; justify-content:center; margin-left: 5px;" title="${esc(eq.item.name)}"><img src="${iconUrl}" style="height:35px; width:auto; image-rendering:pixelated; object-fit:contain; mix-blend-mode: screen;" onerror="this.style.display='none'"/></span>`;
                 }
             }
         });

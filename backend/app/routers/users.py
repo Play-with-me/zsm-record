@@ -235,9 +235,20 @@ async def delete_user_admin(
         raise HTTPException(status_code=403, detail="Forbidden")
     
     from sqlalchemy.future import select
+    from sqlalchemy import delete
     result = await db.execute(select(models.User).filter(models.User.id == u_id))
     u_obj = result.scalars().first()
     if not u_obj: raise HTTPException(status_code=404, detail="User not found")
+    
+    # Cascade delete manual
+    await db.execute(delete(models.UserItem).where(models.UserItem.user_id == u_id))
+    await db.execute(delete(models.Notification).where(models.Notification.user_id == u_id))
+    
+    videos_result = await db.execute(select(models.Video).filter(models.Video.user_id == u_id))
+    for v in videos_result.scalars().all():
+        await db.delete(v)
+    
+    await db.execute(delete(models.Comment).where(models.Comment.user_id == u_id))
     
     await db.delete(u_obj)
     await db.commit()

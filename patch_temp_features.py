@@ -1,110 +1,112 @@
+import re
+
 with open('temp.js', 'r', encoding='utf-8') as f:
-    js = f.read()
+    content = f.read()
 
-# Add router logic if not already added
-old_router = '''if(parts[0]==='profile'&&parts[1]) return renderProfile(parts[1]);'''
-new_router = '''if(parts[0]==='profile'&&parts[1]) return renderProfile(parts[1]);
-  if(parts[0]==='insights') return renderInsights();
-  if(parts[0]==='tournaments') return renderTournaments();'''
+# 1. Update renderProfile logic
+profile_target = """    let badgeHtml = '';
+    if (user.role === 'ADMIN') badgeHtml = `<span class="badge-label badge-boss" title="Quản trị viên">Boss</span>`;
+    else if (publicVideos.length >= 15) badgeHtml = `<span class="badge-label badge-monster" title="Trên 15 kỷ lục">Quái Vật Drift</span>`;
+    else if (publicVideos.length >= 5) badgeHtml = `<span class="badge-label badge-pro" title="Trên 5 kỷ lục">Racer Chuyên Nghiệp</span>`;
+    else badgeHtml = `<span class="badge-label badge-rookie" title="Dưới 5 kỷ lục">Tân Binh</span>`;"""
 
-if 'renderInsights();' not in js:
-    js = js.replace(old_router, new_router)
-
-# Add renderInsights and renderTournaments implementations
-features_js = '''
-// --- Insights (Meta Siêu Xe) ---
-async function renderInsights() {
-  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
-  try {
-    const data = await apiFetch('/record-board/analytics/meta');
+profile_replacement = """    let badgeHtml = '';
+    let frameOverlayHtml = '';
+    let nameColorStyle = '';
     
-    // Sort by count
-    data.sort((a,b) => b.count - a.count);
-    const maxCount = data.length > 0 ? data[0].count : 1;
-
-    $('app').innerHTML = `
-      <div class="animate-in fade-in slide-in">
-        <div class="section-header">
-          <h2>📊 Meta Siêu Xe Thịnh Hành</h2>
-          <p style="color:var(--text-secondary);margin-top:8px;">Top các loại siêu xe được dùng nhiều nhất để lập kỷ lục</p>
-        </div>
-        
-        <div style="background:var(--card-bg); border-radius:var(--radius-lg); padding:32px; margin-bottom:32px; border:1px solid rgba(255,255,255,0.05); box-shadow:var(--shadow-lg);">
-          ${data.length > 0 ? `
-            <div style="display:flex; flex-direction:column; gap:16px;">
-              ${data.map((item, i) => `
-                <div style="display:flex; align-items:center; gap:16px;">
-                  <div style="width:30px; font-weight:bold; color:var(--text-secondary); text-align:right;">#${i+1}</div>
-                  <div style="width:120px; font-weight:bold; color:var(--neon-cyan); text-shadow:0 0 5px rgba(0,255,255,0.3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(item.car)}">${esc(item.car)}</div>
-                  <div style="flex:1; height:24px; background:rgba(255,255,255,0.05); border-radius:12px; overflow:hidden; display:flex; align-items:center;">
-                    <div style="height:100%; width:${(item.count / maxCount) * 100}%; background:linear-gradient(90deg, var(--neon-blue), var(--neon-cyan)); border-radius:12px; transition:width 1s ease-in-out;"></div>
-                  </div>
-                  <div style="width:80px; text-align:right; font-size:0.9rem; color:var(--text-secondary);">${item.count} Lượt</div>
-                </div>
-              `).join('')}
-            </div>
-          ` : '<div class="empty">Chưa có dữ liệu.</div>'}
-        </div>
-      </div>
-    `;
-  } catch(e) {
-    $('app').innerHTML = `<div class="empty">Lỗi tải dữ liệu meta: ${e.message}</div>`;
-  }
-}
-
-// --- Tournaments (Giải Đấu) ---
-async function renderTournaments() {
-  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:200px;border-radius:12px"></div></div>`;
-  try {
-    const t = await apiFetch('/record-board/tournaments/active');
-    
-    if (t) {
-      $('app').innerHTML = `
-        <div class="animate-in fade-in slide-in">
-          <div class="section-header" style="text-align:center;">
-            <h2 style="font-size:2.5rem; color:var(--neon-pink); text-shadow:var(--neon-glow-pink); margin-bottom:16px;">🏆 GIẢI ĐẤU ĐANG DIỄN RA 🏆</h2>
-          </div>
-          
-          <div style="background:linear-gradient(135deg, rgba(255,107,158,0.1), rgba(162,107,255,0.1)); border-radius:var(--radius-lg); padding:40px; margin-bottom:32px; border:1px solid var(--neon-pink); box-shadow:0 0 30px rgba(255,107,158,0.2); text-align:center; position:relative; overflow:hidden;">
-            <div style="position:absolute; top:-50px; left:-50px; width:150px; height:150px; background:var(--neon-pink); filter:blur(100px); opacity:0.5;"></div>
-            <div style="position:absolute; bottom:-50px; right:-50px; width:150px; height:150px; background:var(--neon-blue); filter:blur(100px); opacity:0.5;"></div>
+    // Process equipped items
+    if (user.items && user.items.length > 0) {
+        const equipped = user.items.filter(i => i.is_equipped);
+        equipped.forEach(eq => {
+            let meta = eq.item.metadata_value;
+            let iconUrl = '';
+            try {
+                const p = JSON.parse(meta);
+                meta = p.value || p.css || '';
+                iconUrl = p.icon || '';
+            } catch(e) {}
             
-            <h3 style="font-size:2rem; margin-bottom:16px; position:relative; z-index:1;">${esc(t.name)}</h3>
-            <p style="font-size:1.2rem; color:var(--text-secondary); margin-bottom:24px; position:relative; z-index:1;">${esc(t.description)}</p>
-            
-            <div style="display:inline-block; background:rgba(0,0,0,0.5); padding:16px 32px; border-radius:30px; font-weight:bold; font-size:1.1rem; border:1px solid rgba(255,255,255,0.1); position:relative; z-index:1; margin-bottom:32px;">
-              ⏳ Kết thúc vào: <span style="color:var(--neon-cyan);">${dateStr(t.end_time)}</span>
-            </div>
-            
-            <div>
-              <button class="btn btn-primary btn-lg" onclick="window.location.hash='#/board?map=${t.map_id}'" style="box-shadow:var(--neon-glow-pink); font-size:1.2rem; padding:12px 32px; position:relative; z-index:1;">
-                Xem Bảng Xếp Hạng Giải
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    } else {
-      $('app').innerHTML = `
-        <div class="animate-in fade-in slide-in">
-          <div class="section-header">
-            <h2>🏆 Giải Đấu</h2>
-          </div>
-          <div class="empty">
-            <div style="font-size:4rem; margin-bottom:16px;">😴</div>
-            Hiện tại không có giải đấu nào đang diễn ra. <br>Hãy quay lại sau nhé!
-          </div>
-        </div>
-      `;
+            if (eq.item.item_type === 'name_color') {
+                nameColorStyle = `color:${meta}; text-shadow: 0 0 10px ${meta};`;
+            } else if (eq.item.item_type === 'avatar_frame') {
+                if(iconUrl) {
+                    frameOverlayHtml = `<img src="${iconUrl}" style="position:absolute; top:-20px; left:-20px; width:140px; height:140px; pointer-events:none; object-fit:contain; image-rendering:pixelated;" />`;
+                }
+            } else if (eq.item.item_type === 'badge') {
+                if(iconUrl) {
+                    badgeHtml += `<span class="badge-label" style="background:none; box-shadow:none; padding:0; display:inline-flex; align-items:center; justify-content:center; margin-left: 5px;" title="${esc(eq.item.name)}"><img src="${iconUrl}" style="height:35px; width:auto; image-rendering:pixelated; object-fit:contain;" onerror="this.style.display='none'"/></span>`;
+                }
+            }
+        });
     }
-  } catch(e) {
-    $('app').innerHTML = `<div class="empty">Hiện tại không có giải đấu nào đang diễn ra.</div>`;
-  }
-}
-'''
 
-if 'async function renderInsights' not in js:
-    js = js.replace('// ─── INIT ─────────────────────────────────────────────', features_js + '\n// ─── INIT ─────────────────────────────────────────────')
+    if (!badgeHtml) {
+        if (user.role === 'ADMIN') badgeHtml = `<span class="badge-label badge-boss" title="Quản trị viên">Boss</span>`;
+        else if (publicVideos.length >= 15) badgeHtml = `<span class="badge-label badge-monster" title="Trên 15 kỷ lục">Quái Vật Drift</span>`;
+        else if (publicVideos.length >= 5) badgeHtml = `<span class="badge-label badge-pro" title="Trên 5 kỷ lục">Racer Chuyên Nghiệp</span>`;
+        else badgeHtml = `<span class="badge-label badge-rookie" title="Dưới 5 kỷ lục">Tân Binh</span>`;
+    }
+"""
+
+content = content.replace(profile_target, profile_replacement)
+
+# Update avatar in renderProfile
+avatar_target = """        <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:8px;${user.avatar ? ' cursor:pointer;' : ''}" ${user.avatar ? `onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')"` : ''}>
+          ${user.avatar 
+            ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="100" height="100" loading="eager" decoding="async" style="object-fit:cover; border:3px solid ${pColor}; box-shadow:0 0 15px ${pColor};" />`
+            : `<div style="width:100px;height:100px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:700;color:${pColor};border:3px solid ${pColor};box-shadow:0 0 15px ${pColor}">${esc(user.username[0].toUpperCase())}</div>`
+          }"""
+
+avatar_replacement = """        <div style="position:relative; display:flex; flex-direction:column; align-items:center; gap:8px;${user.avatar ? ' cursor:pointer;' : ''}" ${user.avatar ? `onclick="viewAvatar('${esc(optimizedImage(user.avatar, 1200))}')"` : ''}>
+          <div style="position:relative; width:100px; height:100px;">
+            ${user.avatar 
+              ? `<img src="${esc(optimizedImage(user.avatar, 160))}" class="avatar avatar-lg" width="100" height="100" loading="eager" decoding="async" style="object-fit:cover; border:3px solid ${pColor}; box-shadow:0 0 15px ${pColor}; margin:0; position:absolute; top:0; left:0;" />`
+              : `<div style="width:100px;height:100px;border-radius:50%;background:var(--bg-dark);display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:700;color:${pColor};border:3px solid ${pColor};box-shadow:0 0 15px ${pColor}; margin:0; position:absolute; top:0; left:0;">${esc(user.username[0].toUpperCase())}</div>`
+            }
+            ${frameOverlayHtml}
+          </div>"""
+
+content = content.replace(avatar_target, avatar_replacement)
+
+# Update username color in renderProfile
+username_target = """<span ${isOwner ? `style="cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.3)" onclick="triggerFieldEdit('username')"` : ''} title="Nhấp để đổi tên ${nameWait}">${esc(user.username)}</span>"""
+username_replacement = """<span ${isOwner ? `style="cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.3); ${nameColorStyle}" onclick="triggerFieldEdit('username')"` : `style="${nameColorStyle}"`} title="Nhấp để đổi tên ${nameWait}">${esc(user.username)}</span>"""
+
+# If the exact match doesn't work, we'll try a regex replacement
+import re
+content = re.sub(r'<span \$\{isOwner \? `style="cursor:pointer;border-bottom:1px dashed rgba\(255,255,255,0\.3\)" onclick="triggerFieldEdit\(\'username\'\)"` : \'\'\} title="Nhấp để đổi tên \$\{nameWait\}">\$\{esc\(user\.username\)\}</span>', 
+                 r'<span ${isOwner ? `style="cursor:pointer;border-bottom:1px dashed rgba(255,255,255,0.3); ${nameColorStyle}" onclick="triggerFieldEdit(\'username\')"` : `style="${nameColorStyle}"`} title="Nhấp để đổi tên ${nameWait}">${esc(user.username)}</span>', 
+                 content)
+
+# Update renderNav logic
+nav_target_regex = r'\$\{currentUser\.avatar\s*\?\s*`<img src="\$\{esc\(optimizedImage\(currentUser\.avatar, 64\)\)\}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover;"/>`\s*:\s*`<span class="avatar avatar-sm">\$\{esc\(currentUser\.username\[0\]\.toUpperCase\(\)\)\}</span>`\s*\}\s*<span class="uname">\$\{esc\(currentUser\.username\)\}</span>'
+
+nav_replacement = """${(() => {
+            let frameUrl = '';
+            let nameColor = '';
+            if(currentUser.items) {
+                const eqFrames = currentUser.items.filter(i => i.is_equipped && i.item.item_type === 'avatar_frame');
+                if(eqFrames.length > 0) {
+                    try { const p = JSON.parse(eqFrames[0].item.metadata_value); frameUrl = p.icon || ''; } catch(e){}
+                }
+                const eqColors = currentUser.items.filter(i => i.is_equipped && i.item.item_type === 'name_color');
+                if(eqColors.length > 0) {
+                    try { const p = JSON.parse(eqColors[0].item.metadata_value); nameColor = p.value || p.css || ''; } catch(e){}
+                }
+            }
+            let avHtml = `<div style="position:relative; display:inline-block; width:32px; height:32px; margin-right:8px;">`;
+            avHtml += currentUser.avatar 
+              ? `<img src="${esc(optimizedImage(currentUser.avatar, 64))}" class="avatar avatar-sm" loading="eager" decoding="async" style="object-fit:cover; width:100%; height:100%; margin:0; position:absolute; top:0; left:0;"/>`
+              : `<span class="avatar avatar-sm" style="width:100%; height:100%; margin:0; position:absolute; top:0; left:0; display:flex; align-items:center; justify-content:center;">${esc(currentUser.username[0].toUpperCase())}</span>`;
+            
+            if (frameUrl) avHtml += `<img src="${frameUrl}" style="position:absolute; top:-6px; left:-6px; width:44px; height:44px; pointer-events:none; object-fit:contain; image-rendering:pixelated;" />`;
+            avHtml += `</div><span class="uname" style="${nameColor ? 'color:'+nameColor+'; text-shadow:0 0 8px '+nameColor+';' : ''}">${esc(currentUser.username)}</span>`;
+            return avHtml;
+          })()}"""
+
+content = re.sub(nav_target_regex, nav_replacement, content)
 
 with open('temp.js', 'w', encoding='utf-8') as f:
-    f.write(js)
+    f.write(content)
+
+print("temp.js patched with gamification visual items!")
