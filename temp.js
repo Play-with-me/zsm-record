@@ -1287,13 +1287,13 @@ window.equipShopItem = async function(userItemId) {
           datasets: [{
             label: 'Thời gian (Giây)',
             data: data,
-            borderColor: '#0ff',
-            backgroundColor: 'rgba(0, 255, 255, 0.1)',
+            borderColor: '#d4af37',
+            backgroundColor: 'rgba(212, 175, 55, 0.1)',
             borderWidth: 2,
             tension: 0.3,
             fill: true,
-            pointBackgroundColor: '#f0f',
-            pointBorderColor: '#f0f'
+            pointBackgroundColor: '#be123c',
+            pointBorderColor: '#be123c'
           }]
         },
         options: {

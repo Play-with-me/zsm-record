@@ -14,56 +14,58 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #080608;
-      --bg-card: rgba(18,10,10,0.75);
-      --bg-input: rgba(0,0,0,0.5);
-      --border: rgba(255,255,255,0.07);
-      --border-active: rgba(220,38,38,0.6);
-      --text: #f0f0f5;
-      --text-muted: #9c9cae;
-      --text-dim: #7a7a8f;
-      --blue: #3b82f6;
-      --blue-hover: #60a5fa;
-      --purple: #8b5cf6;
-      --purple-light: #a78bfa;
-      --green: #34d399;
-      --red: #dc2626;
-      --red-light: #ef4444;
-      --red-glow: rgba(220,38,38,0.4);
-      --orange: #fb923c;
+      --bg: #090a0f;
+      --bg-card: rgba(20, 22, 30, 0.85);
+      --bg-input: rgba(10, 12, 18, 0.8);
+      --border: rgba(255,255,255,0.06);
+      --border-active: #d4af37;
+      --text: #f8f9fa;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --blue: #1d4ed8;
+      --blue-hover: #2563eb;
+      --purple: #1e1b4b;
+      --purple-light: #4c1d95;
+      --green: #10b981;
+      --red: #be123c;
+      --red-light: #f43f5e;
+      --red-glow: rgba(190, 18, 60, 0.4);
+      --orange: #f59e0b;
       --yellow: #fbbf24;
-      --radius: 12px;
-      --radius-lg: 18px;
-      --transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-      --neon-cyan: #0ff;
-      --neon-pink: #f0f;
-      --neon-blue: #00f3ff;
-      --neon-purple: #b537f2;
-      --neon-glow-cyan: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3);
-      --neon-glow-pink: 0 0 10px rgba(255, 0, 255, 0.5), 0 0 20px rgba(255, 0, 255, 0.3);
-      --neon-glow-purple: 0 0 10px rgba(181, 55, 242, 0.5), 0 0 20px rgba(181, 55, 242, 0.3);
+      --gold: #d4af37;
+      --gold-glow: rgba(212, 175, 55, 0.4);
+      --radius: 0px;
+      --radius-lg: 0px;
+      --transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+      /* Refined Esports Neon */
+      --neon-cyan: #38bdf8;
+      --neon-pink: #e11d48;
+      --neon-blue: #2563eb;
+      --neon-purple: #d4af37;
+      --neon-glow-cyan: 0 0 15px rgba(56, 189, 248, 0.25);
+      --neon-glow-pink: 0 0 15px rgba(225, 29, 72, 0.25);
+      --neon-glow-purple: 0 0 15px rgba(212, 175, 55, 0.25);
     }
     body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
     a { color:inherit; text-decoration:none; }
     button { cursor:pointer; font-family:inherit; }
     input,textarea,select { font-family:inherit; }
 
-    /* Speed lines BG */
+    /* Esports Grid BG */
     body::before {
       content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-      background:
-        radial-gradient(ellipse 70% 50% at 10% 20%, rgba(220,38,38,0.07) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 90% 80%, rgba(220,38,38,0.05) 0%, transparent 60%),
-        radial-gradient(ellipse 80% 30% at 50% 0%, rgba(30,10,10,0.9) 0%, transparent 70%);
+      background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(190, 18, 60, 0.15) 0%, transparent 60%);
     }
     body::after {
       content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-      background-image:
-        repeating-linear-gradient(105deg, transparent 0px, transparent 80px, rgba(220,38,38,0.018) 80px, rgba(220,38,38,0.018) 81px),
-        repeating-linear-gradient(105deg, transparent 0px, transparent 140px, rgba(255,255,255,0.012) 140px, rgba(255,255,255,0.012) 141px);
+      background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
     }
     #app, .navbar { position:relative; z-index:1; }
 
+    .speed-streaks, .speed-streak, .speed-particle, .speed-bg, .cyberpunk-bg, .cyberpunk-grid, .glow-orb { display: none !important; }
     /* ── Animated speed streaks ────────────────────── */
     @keyframes speedStreak {
       0% { transform: translate3d(-120%,0,0) scaleX(0.3); opacity:0; }
@@ -201,12 +203,9 @@
     .nav-search input { background:transparent; border:none; color:var(--text); font-size:0.85rem; outline:none; padding:4px; width:150px; }
     .nav-search input::placeholder { color:var(--text-dim); }
     .nav-links { display:flex; align-items:center; gap:4px; }
-    .nav-link {
-      padding:6px 12px; border-radius:8px; font-size:0.85rem; font-weight:500;
-      color:var(--text-muted); transition:var(--transition);
-    }
-    .nav-link:hover { color:var(--text); background:rgba(255,255,255,0.05); }
-    .nav-link.active { color:var(--text); background:rgba(255,255,255,0.07); }
+    .nav-link { padding:6px 12px; font-size:0.9rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); transition:var(--transition); border-bottom: 2px solid transparent; border-radius:0; }
+    .nav-link:hover { color:var(--text); background:rgba(255,255,255,0.02); }
+    .nav-link.active { color:var(--gold); border-bottom: 2px solid var(--gold); }
     .nav-link.admin-link { color:var(--orange); }
     .nav-search {
       flex:1; max-width:280px; display:flex; align-items:center;
@@ -225,7 +224,7 @@
     .user-menu { position:relative; }
     .user-trigger {
       display:flex; align-items:center; gap:8px; padding:5px 10px 5px 5px;
-      border-radius:100px; border:1px solid var(--border); background:var(--bg-card);
+      border-radius:0; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); padding: 3px 14px; border:1px solid var(--border); background:var(--bg-card);
       cursor:pointer; transition:var(--transition);
     }
     .user-trigger:hover { border-color:rgba(255,255,255,0.15); }
@@ -248,8 +247,9 @@
     /* BUTTONS */
     .btn {
       display:inline-flex; align-items:center; justify-content:center; gap:7px;
-      padding:9px 18px; border-radius:8px; font-size:0.85rem; font-weight:600;
+      padding:10px 22px; font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
       border:none; transition:var(--transition); white-space:nowrap; cursor:pointer;
+      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
     }
     .btn-primary { background:var(--blue); color:#fff; }
     .btn-primary:hover { background:var(--blue-hover); transform:translateY(-1px); box-shadow: var(--neon-glow-cyan); }
@@ -281,10 +281,10 @@
     /* CARDS */
     .card {
       background:var(--bg-card); border:1px solid var(--border);
-      border-radius:var(--radius);
       transition:var(--transition);
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
     }
-    .card-hover:hover { border-color:var(--neon-purple); transform:translateY(-2px); box-shadow:var(--neon-glow-purple); }
+    .card-hover:hover { border-color:var(--gold); transform:translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
     .card-body { padding:20px; }
     .card-body-lg { padding:32px; }
 
@@ -292,9 +292,10 @@
     .form-group { display:flex; flex-direction:column; gap:6px; }
     .form-label { font-size:0.8rem; font-weight:500; color:var(--text-muted); }
     .form-input {
-      width:100%; padding:10px 13px; border-radius:8px; font-size:0.85rem;
+      width:100%; padding:10px 13px; font-size:0.85rem;
       background:var(--bg-input); border:1px solid var(--border); color:var(--text);
       transition:var(--transition); outline:none;
+      clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
     }
     .form-input:focus { border-color:var(--purple); box-shadow:0 0 0 2px rgba(139,92,246,0.15); }
     .form-input::placeholder { color:var(--text-dim); }
@@ -366,7 +367,7 @@
 
     /* BADGE */
     .badge {
-      display:inline-flex; padding:3px 10px; border-radius:100px;
+      display:inline-flex; padding:3px 10px; border-radius:0; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); padding: 3px 14px;
       font-size:0.72rem; font-weight:600; border:1px solid; letter-spacing:0.02em;
     }
     .badge-blue { background:rgba(59,130,246,0.1); color:#93c5fd; border-color:rgba(59,130,246,0.2); }
@@ -576,7 +577,7 @@
   
     /* PODIUM & BADGES */
     .podium-container { display:flex; align-items:flex-end; justify-content:center; gap:8px; margin:20px 0 40px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.05); min-height:220px; }
-    .podium-spot { display:flex; flex-direction:column; align-items:center; width:30%; max-width:140px; border-radius:12px 12px 0 0; position:relative; box-shadow:0 -10px 20px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.05); border-bottom:none; transition:transform 0.3s ease; }
+    .podium-spot { display:flex; flex-direction:column; align-items:center; width:30%; max-width:140px; border-radius:0; clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%, 0 15px); position:relative; box-shadow:0 -10px 20px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.05); border-bottom:none; transition:transform 0.3s ease; }
     .podium-spot:hover { transform:translateY(-5px); }
     .podium-spot.rank-1 { background:linear-gradient(to top, rgba(255,215,0,0.1), rgba(255,215,0,0.3)); border-color:rgba(255,215,0,0.5); height:160px; z-index:3; }
     .podium-spot.rank-2 { background:linear-gradient(to top, rgba(192,192,192,0.1), rgba(192,192,192,0.25)); border-color:rgba(192,192,192,0.4); height:120px; z-index:2; }
