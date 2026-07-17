@@ -2300,23 +2300,15 @@ async function renderTournaments() {
             <h3 style="font-size:2rem; margin-bottom:16px; position:relative; z-index:1;">${esc(t.name)}</h3>
             <p style="font-size:1.2rem; color:var(--text-secondary); margin-bottom:24px; position:relative; z-index:1;">${esc(t.description)}</p>
             
-            ${t.end_time ? `
-            <div style="display:inline-block; background:rgba(0,0,0,0.5); padding:16px 32px; border-radius:30px; font-weight:bold; font-size:1.1rem; border:1px solid rgba(255,255,255,0.1); position:relative; z-index:1; margin-bottom:32px;">
-              ⏳ Kết thúc vào: <span style="color:var(--neon-cyan);">${dateStr(t.end_time)}</span>
-            </div>` : `
             <div style="display:inline-block; background:rgba(0,0,0,0.5); padding:16px 32px; border-radius:30px; font-weight:bold; font-size:1.1rem; border:1px solid rgba(255,255,255,0.1); position:relative; z-index:1; margin-bottom:32px; color:var(--neon-cyan);">
               🔥 Đang diễn ra khốc liệt! 🔥
-            </div>`}
+            </div>
             
             <div>
               <div style="display:flex; gap:16px; justify-content:center; position:relative; z-index:1;">
                 <button class="btn btn-primary btn-lg" onclick="window.location.hash='#/tournaments/bracket/${t.id}'" style="box-shadow:var(--neon-glow-pink); font-size:1.2rem; padding:12px 32px;">
                   Xem Sơ Đồ Thi Đấu
                 </button>
-                ${t.map_id ? `
-                <button class="btn btn-outline btn-lg" onclick="window.location.hash='#/board?map=${t.map_id}'" style="font-size:1.2rem; padding:12px 32px;">
-                  Bảng Xếp Hạng Giải
-                </button>` : ''}
               </div>
             </div>
           </div>
@@ -2711,10 +2703,6 @@ window.renderAdminTournamentBracket = async function(tid) {
               <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
                   <div class="form-group"><label class="form-label">Tên giải đấu</label><input class="form-input" id="edit_name" value="${esc(t.name)}"/></div>
                   <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="edit_desc" value="${esc(t.description||'')}"/></div>
-                  <div style="display:flex;gap:12px;">
-                      <div class="form-group" style="flex:1"><label class="form-label">Bắt đầu</label><input class="form-input" type="datetime-local" id="edit_start" value="${t.start_time ? new Date(new Date(t.start_time).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : ''}"/></div>
-                      <div class="form-group" style="flex:1"><label class="form-label">Kết thúc</label><input class="form-input" type="datetime-local" id="edit_end" value="${t.end_time ? new Date(new Date(t.end_time).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : ''}"/></div>
-                  </div>
                   <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="saveTournamentInfo('${t.id}')">💾 Lưu Thông Tin</button>
               </div>
           </div></div>
@@ -2801,9 +2789,7 @@ window.saveTournamentInfo = async function(tid) {
     try {
         let bodyData = {
             name: document.getElementById('edit_name').value, 
-            description: document.getElementById('edit_desc').value, 
-            start_time: document.getElementById('edit_start').value ? new Date(document.getElementById('edit_start').value).toISOString() : null,
-            end_time: document.getElementById('edit_end').value ? new Date(document.getElementById('edit_end').value).toISOString() : null
+            description: document.getElementById('edit_desc').value
         };
         await apiFetch(`/record-board/tournaments/${tid}`, {method: 'PUT', body: JSON.stringify(bodyData)});
         toast('Đã lưu thông tin giải đấu!');
