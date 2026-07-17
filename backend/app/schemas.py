@@ -175,6 +175,63 @@ class MapLeaderboardEntry(BaseModel):
     class Config:
         from_attributes = True
 
+# ----------------- Tournaments -----------------
+class TournamentParticipantResponse(BaseModel):
+    id: str
+    user_id: str
+    seed: Optional[int] = None
+    user: UserResponse
+    class Config:
+        from_attributes = True
+
+class TournamentMatchResponse(BaseModel):
+    id: str
+    round_name: str
+    round_sequence: int
+    match_index: int
+    player1_id: Optional[str] = None
+    player2_id: Optional[str] = None
+    winner_id: Optional[str] = None
+    next_match_id: Optional[str] = None
+    is_completed: bool
+    player1: Optional[UserResponse] = None
+    player2: Optional[UserResponse] = None
+    winner: Optional[UserResponse] = None
+    class Config:
+        from_attributes = True
+
+class TournamentBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    map_id: str
+    start_time: datetime
+    end_time: datetime
+    is_active: bool = True
+    format: str = "SINGLE"
+    status: str = "DRAFT"
+
+class TournamentCreate(TournamentBase):
+    pass
+
+class TournamentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    is_active: Optional[bool] = None
+    format: Optional[str] = None
+    status: Optional[str] = None
+
+class TournamentResponse(TournamentBase):
+    id: str
+    map: MapResponse
+    class Config:
+        from_attributes = True
+
+class TournamentDetailResponse(TournamentResponse):
+    participants: List[TournamentParticipantResponse] = []
+    matches: List[TournamentMatchResponse] = []
+
 # ----------------- Comments -----------------
 class CommentBase(BaseModel):
     content: str

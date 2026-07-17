@@ -87,24 +87,21 @@ async def get_meta_pets(db: AsyncSession = Depends(get_db)):
 from fastapi import HTTPException
 from pydantic import BaseModel
 from datetime import datetime
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from .auth import get_current_user
-from .. import models
+from .. import models, schemas
+import math
+from typing import List, Optional
 
-class TournamentCreate(BaseModel):
-    name: str
-    description: str
-    map_id: str
-    start_time: datetime
-    end_time: datetime
-
-@router.post("/tournaments")
+@router.post('/tournaments', response_model=schemas.TournamentResponse)
 async def create_tournament(
-    t: TournamentCreate,
+    t: schemas.TournamentCreate,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     if current_user.role != models.RoleEnum.ADMIN:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail='Forbidden')
     
     new_t = models.Tournament(
         name=t.name,
@@ -112,60 +109,252 @@ async def create_tournament(
         map_id=t.map_id,
         start_time=t.start_time,
         end_time=t.end_time,
-        is_active=True
+        is_active=t.is_active,
+        format=t.format,
+        status=t.status
     )
     db.add(new_t)
     await db.commit()
     await db.refresh(new_t)
-    return new_t
+    
+    res = await db.execute(select(models.Tournament).options(selectinload(models.Tournament.map)).filter(models.Tournament.id == new_t.id))
+    return res.scalars().first()
 
-@router.get("/tournaments")
+@router.get('/tournaments', response_model=List[schemas.TournamentResponse])
 async def get_all_tournaments(db: AsyncSession = Depends(get_db)):
-    from sqlalchemy.future import select
-    from .. import models
-    result = await db.execute(select(models.Tournament).order_by(models.Tournament.created_at.desc()))
-    rows = result.scalars().all()
-    return [{"id": t.id, "name": t.name, "description": t.description, "map_id": t.map_id, "start_time": t.start_time, "end_time": t.end_time, "is_active": t.is_active} for t in rows]
+    result = await db.execute(
+        select(models.Tournament)
+        .options(selectinload(models.Tournament.map))
+        .order_by(models.Tournament.created_at.desc())
+    )
+    return result.scalars().all()
 
-@router.put("/tournaments/{t_id}")
+@router.get('/tournaments/{t_id}', response_model=schemas.TournamentDetailResponse)
+async def get_tournament_detail(t_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(models.Tournament)
+        .options(
+            selectinload(models.Tournament.map),
+            selectinload(models.Tournament.participants).selectinload(models.TournamentParticipant.user),
+            selectinload(models.Tournament.matches).selectinload(models.TournamentMatch.player1),
+            selectinload(models.Tournament.matches).selectinload(models.TournamentMatch.player2),
+            selectinload(models.Tournament.matches).selectinload(models.TournamentMatch.winner)
+        )
+        .filter(models.Tournament.id == t_id)
+    )
+    t_obj = result.scalars().first()
+    if not t_obj:
+        raise HTTPException(status_code=404, detail='Tournament not found')
+    return t_obj
+
+@router.put('/tournaments/{t_id}', response_model=schemas.TournamentResponse)
 async def update_tournament(
     t_id: str,
-    t: TournamentCreate,
+    t: schemas.TournamentUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     if current_user.role != models.RoleEnum.ADMIN:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail='Forbidden')
     
-    from sqlalchemy.future import select
     result = await db.execute(select(models.Tournament).filter(models.Tournament.id == t_id))
     t_obj = result.scalars().first()
-    if not t_obj: raise HTTPException(status_code=404, detail="Tournament not found")
+    if not t_obj: raise HTTPException(status_code=404, detail='Tournament not found')
     
-    t_obj.name = t.name
-    t_obj.description = t.description
-    t_obj.map_id = t.map_id
-    t_obj.start_time = t.start_time
-    t_obj.end_time = t.end_time
+    if t.name is not None: t_obj.name = t.name
+    if t.description is not None: t_obj.description = t.description
+    if t.start_time is not None: t_obj.start_time = t.start_time
+    if t.end_time is not None: t_obj.end_time = t.end_time
+    if t.is_active is not None: t_obj.is_active = t.is_active
+    if t.format is not None: t_obj.format = t.format
+    if t.status is not None: t_obj.status = t.status
     
     await db.commit()
-    await db.refresh(t_obj)
-    return t_obj
+    
+    res = await db.execute(select(models.Tournament).options(selectinload(models.Tournament.map)).filter(models.Tournament.id == t_id))
+    return res.scalars().first()
 
-@router.delete("/tournaments/{t_id}")
+@router.delete('/tournaments/{t_id}')
 async def delete_tournament(
     t_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     if current_user.role != models.RoleEnum.ADMIN:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail='Forbidden')
     
-    from sqlalchemy.future import select
     result = await db.execute(select(models.Tournament).filter(models.Tournament.id == t_id))
     t_obj = result.scalars().first()
-    if not t_obj: raise HTTPException(status_code=404, detail="Tournament not found")
+    if not t_obj: raise HTTPException(status_code=404, detail='Tournament not found')
     
     await db.delete(t_obj)
     await db.commit()
-    return {"message": "Deleted tournament"}
+    return {'message': 'Deleted tournament'}
+
+class ParticipantAdd(BaseModel):
+    user_id: str
+    seed: Optional[int] = None
+
+@router.post('/tournaments/{t_id}/participants', response_model=schemas.TournamentParticipantResponse)
+async def add_participant(
+    t_id: str,
+    p: ParticipantAdd,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != models.RoleEnum.ADMIN:
+        raise HTTPException(status_code=403, detail='Forbidden')
+        
+    part = models.TournamentParticipant(tournament_id=t_id, user_id=p.user_id, seed=p.seed)
+    db.add(part)
+    await db.commit()
+    await db.refresh(part)
+    
+    res = await db.execute(select(models.TournamentParticipant).options(selectinload(models.TournamentParticipant.user)).filter(models.TournamentParticipant.id == part.id))
+    return res.scalars().first()
+
+@router.delete('/tournaments/{t_id}/participants/{user_id}')
+async def remove_participant(
+    t_id: str,
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != models.RoleEnum.ADMIN:
+        raise HTTPException(status_code=403, detail='Forbidden')
+        
+    res = await db.execute(select(models.TournamentParticipant).filter(models.TournamentParticipant.tournament_id == t_id, models.TournamentParticipant.user_id == user_id))
+    part = res.scalars().first()
+    if part:
+        await db.delete(part)
+        await db.commit()
+    return {'message': 'Removed'}
+
+@router.post('/tournaments/{t_id}/generate')
+async def generate_bracket(
+    t_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != models.RoleEnum.ADMIN:
+        raise HTTPException(status_code=403, detail='Forbidden')
+        
+    res = await db.execute(select(models.Tournament).options(selectinload(models.Tournament.participants)).filter(models.Tournament.id == t_id))
+    t_obj = res.scalars().first()
+    if not t_obj: raise HTTPException(status_code=404, detail='Tournament not found')
+    
+    if t_obj.format != models.TournamentFormatEnum.SINGLE:
+        raise HTTPException(status_code=400, detail='Only SINGLE format is supported for auto-generation right now')
+        
+    # Delete existing matches
+    await db.execute(models.TournamentMatch.__table__.delete().where(models.TournamentMatch.tournament_id == t_id))
+    
+    participants = list(t_obj.participants)
+    num_p = len(participants)
+    if num_p < 2: raise HTTPException(status_code=400, detail='Need at least 2 participants')
+    
+    # Calculate next power of 2
+    bracket_size = 2 ** math.ceil(math.log2(num_p))
+    total_rounds = int(math.log2(bracket_size))
+    
+    matches_dict = {} 
+    from ..models import generate_uuid
+    
+    for r in range(1, total_rounds + 1):
+        matches_in_round = bracket_size // (2 ** r)
+        for i in range(matches_in_round):
+            matches_dict[(r, i)] = generate_uuid()
+            
+    def get_round_name(r, total):
+        if r == total: return "Chung Kết"
+        if r == total - 1: return "Bán Kết"
+        if r == total - 2: return "Tứ Kết"
+        return f"Vòng {r}"
+        
+    for r in range(1, total_rounds + 1):
+        matches_in_round = bracket_size // (2 ** r)
+        for i in range(matches_in_round):
+            mid = matches_dict[(r, i)]
+            next_mid = None
+            if r < total_rounds:
+                next_mid = matches_dict[(r + 1, i // 2)]
+            
+            p1_id = None
+            p2_id = None
+            
+            # Fill players for Round 1
+            if r == 1:
+                idx1 = i * 2
+                idx2 = i * 2 + 1
+                if idx1 < num_p: p1_id = participants[idx1].user_id
+                if idx2 < num_p: p2_id = participants[idx2].user_id
+                
+            m = models.TournamentMatch(
+                id=mid,
+                tournament_id=t_id,
+                round_name=get_round_name(r, total_rounds),
+                round_sequence=r,
+                match_index=i,
+                player1_id=p1_id,
+                player2_id=p2_id,
+                next_match_id=next_mid
+            )
+            db.add(m)
+            
+    t_obj.status = models.TournamentStatusEnum.ONGOING
+    await db.commit()
+    return {'message': 'Generated'}
+
+class MatchUpdate(BaseModel):
+    player1_id: Optional[str] = None
+    player2_id: Optional[str] = None
+    winner_id: Optional[str] = None
+
+@router.put('/tournaments/{t_id}/matches/{m_id}', response_model=schemas.TournamentMatchResponse)
+async def update_match(
+    t_id: str,
+    m_id: str,
+    m_upd: MatchUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != models.RoleEnum.ADMIN:
+        raise HTTPException(status_code=403, detail='Forbidden')
+        
+    res = await db.execute(select(models.TournamentMatch).filter(models.TournamentMatch.id == m_id, models.TournamentMatch.tournament_id == t_id))
+    m = res.scalars().first()
+    if not m: raise HTTPException(status_code=404, detail='Match not found')
+    
+    if m_upd.player1_id is not None: m.player1_id = m_upd.player1_id if m_upd.player1_id else None
+    if m_upd.player2_id is not None: m.player2_id = m_upd.player2_id if m_upd.player2_id else None
+    
+    if m_upd.winner_id is not None:
+        if m_upd.winner_id == '':
+            m.winner_id = None
+            m.is_completed = False
+        else:
+            m.winner_id = m_upd.winner_id
+            m.is_completed = True
+            
+            # Advance winner to next match
+            if m.next_match_id:
+                next_res = await db.execute(select(models.TournamentMatch).filter(models.TournamentMatch.id == m.next_match_id))
+                nm = next_res.scalars().first()
+                if nm:
+                    if m.match_index % 2 == 0:
+                        nm.player1_id = m.winner_id
+                    else:
+                        nm.player2_id = m.winner_id
+                    
+    await db.commit()
+    
+    res = await db.execute(
+        select(models.TournamentMatch)
+        .options(
+            selectinload(models.TournamentMatch.player1),
+            selectinload(models.TournamentMatch.player2),
+            selectinload(models.TournamentMatch.winner)
+        )
+        .filter(models.TournamentMatch.id == m_id)
+    )
+    return res.scalars().first()

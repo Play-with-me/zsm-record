@@ -610,6 +610,57 @@
     .badge-rookie { background:rgba(150,150,150,0.1); color:#aaa; border-color:rgba(150,150,150,0.4); }
     .badge-monster { background:rgba(212, 175, 55,0.1); color:var(--neon-purple); border-color:rgba(212, 175, 55,0.4); box-shadow:0 0 8px rgba(212, 175, 55,0.2); }
     .time-delta { font-family:monospace; font-size:0.85rem; color:#ff4444; margin-left:8px; font-weight:600; }
+/* BRACKET CSS */
+.bracket-wrapper {
+  overflow-x: auto;
+  padding: 20px 0;
+  margin-top: 40px;
+}
+.bracket-container {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  min-width: max-content;
+}
+.bracket-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  min-width: 200px;
+}
+.bracket-round-name {
+  text-align: center;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  margin-bottom: 20px;
+  text-shadow: var(--neon-glow-cyan);
+}
+.bracket-match {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.bracket-team {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-weight: bold;
+  text-align: center;
+}
+.bracket-team:last-child {
+  border-bottom: none;
+}
+.bracket-team.winner {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 5px var(--neon-cyan);
+}
+.bracket-team.loser {
+  color: #555;
+  text-decoration: line-through;
+}
 </style>
 </head>
 <body>

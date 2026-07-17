@@ -71,6 +71,16 @@ class Notification(Base):
 
     user = relationship("User", back_populates="notifications")
 
+class TournamentFormatEnum(str, enum.Enum):
+    SINGLE = "SINGLE"
+    DOUBLE = "DOUBLE"
+    GROUPS = "GROUPS"
+
+class TournamentStatusEnum(str, enum.Enum):
+    DRAFT = "DRAFT"
+    ONGOING = "ONGOING"
+    COMPLETED = "COMPLETED"
+
 class Tournament(Base):
     __tablename__ = "tournaments"
 
@@ -81,8 +91,44 @@ class Tournament(Base):
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     is_active = Column(Boolean, default=True)
+    format = Column(Enum(TournamentFormatEnum), default=TournamentFormatEnum.SINGLE, nullable=False)
+    status = Column(Enum(TournamentStatusEnum), default=TournamentStatusEnum.DRAFT, nullable=False)
 
     map = relationship("Map")
+    participants = relationship("TournamentParticipant", back_populates="tournament", cascade="all, delete-orphan")
+    matches = relationship("TournamentMatch", back_populates="tournament", cascade="all, delete-orphan")
+
+class TournamentParticipant(Base):
+    __tablename__ = "tournament_participants"
+
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    tournament_id = Column(String, ForeignKey("tournaments.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    seed = Column(Integer, nullable=True) # Hạt giống
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    tournament = relationship("Tournament", back_populates="participants")
+    user = relationship("User")
+
+class TournamentMatch(Base):
+    __tablename__ = "tournament_matches"
+
+    id = Column(String, primary_key=True, index=True, default=generate_uuid)
+    tournament_id = Column(String, ForeignKey("tournaments.id", ondelete="CASCADE"), nullable=False)
+    round_name = Column(String, nullable=False) # e.g. 'Tứ Kết', 'Bán Kết'
+    round_sequence = Column(Integer, nullable=False, default=1) # 1, 2, 3 for ordering
+    match_index = Column(Integer, nullable=False, default=0) # 0, 1, 2, 3 in the round
+    player1_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    player2_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    winner_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    next_match_id = Column(String, ForeignKey("tournament_matches.id", ondelete="SET NULL"), nullable=True)
+    is_completed = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    tournament = relationship("Tournament", back_populates="matches")
+    player1 = relationship("User", foreign_keys=[player1_id])
+    player2 = relationship("User", foreign_keys=[player2_id])
+    winner = relationship("User", foreign_keys=[winner_id])
 
 class Map(Base):
     __tablename__ = "maps"
