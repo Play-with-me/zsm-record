@@ -181,6 +181,43 @@
     .btn-close-modal:hover { color:var(--neon-pink); text-shadow:var(--neon-glow-pink); }
 
 
+    
+    /* COLLAPSIBLE SIDEBAR */
+    body { padding-left: 260px; transition: padding-left 0.3s ease; }
+    .navbar { transition: width 0.3s ease; overflow-x: hidden; }
+    .navbar.collapsed { width: 80px; }
+    
+    .navbar.collapsed .logo-text,
+    .navbar.collapsed .nav-search,
+    .navbar.collapsed .nav-link-text,
+    .navbar.collapsed .uname { display: none; }
+    
+    .navbar.collapsed .logo img { width: 40px !important; height: 40px !important; }
+    .navbar.collapsed .nav-link { justify-content: center; padding: 12px 0; }
+    .navbar.collapsed .nav-link svg { margin: 0; }
+    .navbar.collapsed .user-trigger { justify-content: center; padding: 8px 0; }
+    .navbar.collapsed .user-avatar { margin: 0; }
+    
+    .sidebar-toggle { 
+        position: absolute; right: -15px; top: 30px; width: 30px; height: 30px; 
+        background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        color: var(--text-muted); z-index: 101; transition: var(--transition);
+    }
+    .sidebar-toggle:hover { color: var(--gold); border-color: var(--gold); transform: scale(1.1); }
+    .navbar.collapsed .sidebar-toggle { right: -15px; transform: rotate(180deg); }
+    .navbar.collapsed .sidebar-toggle:hover { transform: rotate(180deg) scale(1.1); }
+    
+    body.sidebar-collapsed { padding-left: 80px; }
+    
+    @media (max-width: 768px) {
+        body { padding-left: 0 !important; }
+        body.sidebar-collapsed { padding-left: 0 !important; }
+        .sidebar-toggle { display: none; }
+        .navbar.collapsed { width: 100%; }
+        .navbar.collapsed .nav-link { padding: 8px 0; }
+    }
+
     /* SIDEBAR */
     .navbar { position:fixed; top:0; left:0; bottom:0; width:260px; z-index:100; background:rgba(8,9,14,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-right:1px solid rgba(255,255,255,0.05); box-shadow:5px 0 30px rgba(0,0,0,0.4); display:flex; flex-direction:column; }
     .navbar-inner { display:flex; flex-direction:column; padding:30px 0 20px; height:100%; gap:10px; }
@@ -768,19 +805,22 @@
 
 
 
-<nav class="navbar">
+<nav class="navbar" id="sidebar">
+  <div class="sidebar-toggle" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>
+  </div>
   <div class="navbar-inner">
-    <a href="#/" class="logo"><img src="Logo-clan.jpg" alt="TNX" width="32" height="32" decoding="async" style="height:32px; width:auto; border-radius:4px; object-fit:contain;"/> TNX Record</a>
+    <a href="#/" class="logo"><img src="Logo-clan.jpg" alt="TNX" width="32" height="32" decoding="async" style="height:32px; width:auto; border-radius:4px; object-fit:contain;"/> <span class="logo-text">TNX Record</span></a>
     <div class="nav-search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input id="global-search" placeholder="Tìm kiếm record..." oninput="onSearchInput(this.value)" autocomplete="off" />
     </div>
     <div class="nav-links">
-      <a href="#/" class="nav-link" data-route="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> Trang chủ</a>
-      <a href="#/board" class="nav-link" data-route="/board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-4"></path></svg> Bảng Xếp Hạng</a>
-      <a href="#/tournaments" class="nav-link" data-route="/tournaments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg> Giải Đấu</a>
-      <a href="#/insights" class="nav-link" data-route="/insights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H8.3a2 2 0 0 0-1.6.8L4 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a3 3 0 1 1-6 0m10 0a3 3 0 1 1-6 0"></path></svg> Meta Siêu Xe</a>
-      <a href="#/shop" class="nav-link" data-route="/shop" style="color: var(--neon-cyan); font-weight: 800; text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> Cửa Hàng</a>
+      <a href="#/" class="nav-link" data-route="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> <span class="nav-link-text">Trang chủ</span></a>
+      <a href="#/board" class="nav-link" data-route="/board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-4"></path></svg> <span class="nav-link-text">Bảng Xếp Hạng</span></a>
+      <a href="#/tournaments" class="nav-link" data-route="/tournaments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg> <span class="nav-link-text">Giải Đấu</span></a>
+      <a href="#/insights" class="nav-link" data-route="/insights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H8.3a2 2 0 0 0-1.6.8L4 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a3 3 0 1 1-6 0m10 0a3 3 0 1 1-6 0"></path></svg> <span class="nav-link-text">Meta Siêu Xe</span></a>
+      <a href="#/shop" class="nav-link" data-route="/shop" style="color: var(--neon-cyan); font-weight: 800; text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg> <span class="nav-link-text">Cửa Hàng</span></a>
     </div>
     <div id="nav-auth"></div>
   </div>
@@ -798,5 +838,20 @@
 <div class="toasts" id="toasts"></div>
 
 <script src="temp.js?v=25"></script>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const isCollapsed = sidebar.classList.toggle('collapsed');
+    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    localStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0');
+}
+// Init sidebar state
+if (localStorage.getItem('sidebar_collapsed') === '1') {
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed');
+}
+</script>
+
 </body>
 </html>
