@@ -232,13 +232,9 @@ async def update_tournament(
     t_obj = result.scalars().first()
     if not t_obj: raise HTTPException(status_code=404, detail='Tournament not found')
     
-    if t.name is not None: t_obj.name = t.name
-    if t.description is not None: t_obj.description = t.description
-    if t.start_time is not None: t_obj.start_time = t.start_time
-    if t.end_time is not None: t_obj.end_time = t.end_time
-    if t.is_active is not None: t_obj.is_active = t.is_active
-    if t.format is not None: t_obj.format = t.format
-    if t.status is not None: t_obj.status = t.status
+    update_data = t.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(t_obj, key, value)
     
     await db.commit()
     
