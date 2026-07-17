@@ -68,6 +68,7 @@ function clearToken() { localStorage.removeItem('zsm_token'); }
 async function apiFetch(path, opts={}) {
   const h={'Content-Type':'application/json',...(opts.headers||{})};
   if(getToken()) h['Authorization']=`Bearer ${getToken()}`;
+  opts.cache = opts.cache || 'no-store'; // Bypass browser cache for real-time updates
   const res = await fetch(`${API}${path}`,{...opts,headers:h});
   if(!res.ok) { const e=await res.json().catch(()=>({detail:'Lỗi kết nối'})); throw new Error(e.detail||'Yêu cầu thất bại'); }
   return res.json();
