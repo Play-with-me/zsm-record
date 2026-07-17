@@ -1903,10 +1903,12 @@ async function renderTournamentBracket(tid) {
             let p1Class = isP1Winner ? 'winner' : (m.is_completed ? 'loser' : '');
             let p2Class = isP2Winner ? 'winner' : (m.is_completed ? 'loser' : '');
             
+            // Check if this is a BYE match (Round 1, completed automatically, no opponent)
+            let isBye = m.round_sequence === 1 && m.is_completed && m.player1 && !m.player2;
             let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
             
             return `
-            <div class="bracket-match-wrapper">
+            <div class="bracket-match-wrapper ${isBye ? 'is-bye' : ''}">
                 <div class="bracket-match ${m.is_completed ? 'completed' : ''}">
                     <div class="match-header">${matchTitle}</div>
                     <div class="match-player ${p1Class}">
