@@ -358,9 +358,12 @@ async def update_shop_item(db: AsyncSession, item_id: str, item_update: schemas.
     return db_item
 
 async def delete_shop_item(db: AsyncSession, item_id: str):
+    from sqlalchemy import delete
     result = await db.execute(select(models.ShopItem).filter(models.ShopItem.id == item_id))
     db_item = result.scalars().first()
     if db_item:
+        # Manually cascade delete user items first
+        await db.execute(delete(models.UserItem).where(models.UserItem.item_id == item_id))
         await db.delete(db_item)
         await db.commit()
         return True

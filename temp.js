@@ -663,7 +663,7 @@ async function loadBoard() {
     
     let top1Ms = board[0].record_ms;
     let top3 = board.slice(0, 3);
-    let rest = board.slice(3);
+    let rest = board;
     
     if (podium && top3.length > 0) {
         podium.style.display = 'flex';
@@ -1372,7 +1372,7 @@ async function renderAdmin() {
           <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
           <td>🪙 ${formatCoins(u.coins||0)}</td>
           <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
-          <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}')">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
+          <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}', ${u.coins})">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
         </tr>`).join('')}</tbody>
         </table></div>`:
         tab==='shop'?`
@@ -1633,6 +1633,7 @@ window.adminEditUser = function(id, curName, curEmail, curCoins) {
     <form id="euf" style="display:flex;flex-direction:column;gap:14px;">
       <div class="form-group"><label class="form-label">Tên</label><input class="form-input" name="un" value="${curName}" required/></div>
       <div class="form-group"><label class="form-label">Email</label><input class="form-input" name="em" value="${curEmail}" required/></div>
+      <div class="form-group"><label class="form-label">Số Dư (Vàng)</label><input type="number" class="form-input" name="coins" value="${curCoins !== 'undefined' && curCoins !== undefined ? curCoins : 0}" required/></div>
       <div class="modal-actions" style="margin-top:10px">
         <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.modal-overlay').remove()">Hủy</button>
         <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
