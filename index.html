@@ -190,7 +190,8 @@
     #app { margin-left: var(--sidebar-w); transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1); }
     #app.sidebar-collapsed { margin-left: var(--sidebar-collapsed-w); }
     
-    .navbar { transition: width 0.3s cubic-bezier(0.4,0,0.2,1); overflow: hidden; width: var(--sidebar-w); }
+    .navbar { transition: width 0.3s cubic-bezier(0.4,0,0.2,1); width: var(--sidebar-w); overflow: visible; z-index: 100; }
+    .navbar-inner { display:flex; flex-direction:column; padding:30px 0 20px; height:100%; gap:10px; overflow: visible; }
     .navbar.collapsed { width: var(--sidebar-collapsed-w); }
     
     /* Hide text labels when collapsed */
@@ -258,8 +259,7 @@
 
 
     /* SIDEBAR */
-    .navbar { position:fixed; top:0; left:0; bottom:0; width:260px; z-index:100; background:rgba(8,9,14,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-right:1px solid rgba(255,255,255,0.05); box-shadow:5px 0 30px rgba(0,0,0,0.4); display:flex; flex-direction:column; }
-    .navbar-inner { display:flex; flex-direction:column; padding:30px 0 20px; height:100%; gap:10px; }
+    .navbar { position:fixed; top:0; left:0; bottom:0; z-index:100; background:rgba(8,9,14,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-right:1px solid rgba(255,255,255,0.05); box-shadow:5px 0 30px rgba(0,0,0,0.4); display:flex; flex-direction:column; }
     .logo { font-size:1.5rem; font-weight:900; letter-spacing:-0.04em; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; color:var(--red); font-family:'Rajdhani', sans-serif; text-transform:uppercase; text-shadow: 0 0 10px rgba(220,38,38,0.3); transition: transform 0.3s ease; padding:0 20px 20px; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.05); }
     .logo img { width: 64px !important; height: 64px !important; }
     .logo:hover { transform: scale(1.05); }
@@ -823,7 +823,7 @@
 
     /* ── PERFORMANCE OPTIMIZATIONS ────────────────────────────── */
     /* GPU compositing for animated elements */
-    .navbar, .card, .modal-overlay, .user-dropdown {
+    .card, .modal-overlay, .user-dropdown {
         will-change: auto;
         transform: translateZ(0);
         -webkit-transform: translateZ(0);
@@ -837,8 +837,8 @@
     @media (max-width: 768px) {
         .navbar, .modal-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
     }
-    /* Contain layout for sidebar */
-    .navbar { contain: layout style; }
+    /* Contain layout for sidebar removed to prevent clipping user-dropdown */
+
     /* Reduce repaints from animations */
     .skeleton { will-change: background-position; }
     .animate-in, .animate-up { will-change: opacity, transform; }
