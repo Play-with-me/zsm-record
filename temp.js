@@ -8,10 +8,13 @@ const API = window.location.hostname === 'localhost' || window.location.hostname
 let currentUser = null;
 let searchTimeout = null;
 const apiCache = new Map();
-const CACHE_TTL = 60000;
+const CACHE_TTL = 120000; // 2 minutes default TTL
+const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+const slowNetwork = connection && (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g' || connection.saveData);
 const liteDevice = window.matchMedia('(max-width: 768px)').matches ||
   (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) ||
-  (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  (navigator.deviceMemory && navigator.deviceMemory <= 2) ||
+  slowNetwork;
 if (liteDevice) document.documentElement.classList.add('perf-lite');
 
 // ─── UTILS ───────────────────────────────────────────
@@ -65,10 +68,25 @@ function setToken(t) { localStorage.setItem('zsm_token',t); }
 function clearToken() { localStorage.removeItem('zsm_token'); }
 
 // ─── API ─────────────────────────────────────────────
+// In-flight deduplication: prevent duplicate concurrent GET requests
+const _inflightFetches = new Map();
+
 async function apiFetch(path, opts={}) {
   const h={'Content-Type':'application/json',...(opts.headers||{})};
   if(getToken()) h['Authorization']=`Bearer ${getToken()}`;
-  opts.cache = opts.cache || 'no-store'; // Bypass browser cache for real-time updates
+  const isGet = !opts.method || opts.method === 'GET';
+  if (isGet) {
+    // Deduplicate concurrent identical requests
+    if (_inflightFetches.has(path)) return _inflightFetches.get(path);
+    const promise = fetch(`${API}${path}`, {...opts, headers:h, cache:'no-store'})
+      .then(async res => {
+        _inflightFetches.delete(path);
+        if(!res.ok) { const e=await res.json().catch(()=>({detail:'Lỗi kết nối'})); throw new Error(e.detail||'Yêu cầu thất bại'); }
+        return res.json();
+      }).catch(e => { _inflightFetches.delete(path); throw e; });
+    _inflightFetches.set(path, promise);
+    return promise;
+  }
   const res = await fetch(`${API}${path}`,{...opts,headers:h});
   if(!res.ok) { const e=await res.json().catch(()=>({detail:'Lỗi kết nối'})); throw new Error(e.detail||'Yêu cầu thất bại'); }
   return res.json();
@@ -76,7 +94,15 @@ async function apiFetch(path, opts={}) {
 async function cachedApiFetch(path, ttl=CACHE_TTL) {
   const now = Date.now();
   const cached = apiCache.get(path);
-  if(cached && now - cached.ts < ttl) return cached.data;
+  if (cached) {
+    const age = now - cached.ts;
+    if (age < ttl) return cached.data; // Fresh - return immediately
+    // Stale-while-revalidate: return stale instantly, refresh in background
+    if (age < ttl * 4) {
+      apiFetch(path).then(data => apiCache.set(path, {ts: Date.now(), data})).catch(()=>{});
+      return cached.data;
+    }
+  }
   const data = await apiFetch(path);
   apiCache.set(path, {ts: now, data});
   return data;
@@ -2509,10 +2535,22 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Start polling
-setInterval(() => {
-  if (currentUser) fetchNotifications();
-}, 30000);
+// Smart polling - pauses when tab hidden, 45s interval
+let _notifInterval = null;
+function _startNotifPolling() {
+  _notifInterval = setInterval(() => {
+    if (currentUser && !document.hidden) fetchNotifications();
+  }, 45000);
+}
+_startNotifPolling();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(_notifInterval);
+  } else {
+    if (currentUser) fetchNotifications(); // fetch immediately on tab focus
+    _startNotifPolling();
+  }
+});
 
 
 window.openInventory = async function() {

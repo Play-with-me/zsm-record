@@ -8,8 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://res.cloudinary.com" />
+  <link rel="preconnect" href="https://zsm-record-backend.onrender.com" crossorigin />
   <link rel="dns-prefetch" href="https://zsm-record-backend.onrender.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" /></noscript>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -137,7 +139,7 @@
     }
     
     /* BACKGROUND SPEED THEME */
-    .speed-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; background:var(--bg); overflow:hidden; }
+    .speed-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; background:var(--bg); overflow:hidden; pointer-events:none; }
     .speed-line {
       position:absolute; width:2px; height:200px;
       background:linear-gradient(to bottom, transparent, var(--neon-cyan), transparent);
@@ -156,13 +158,13 @@
     .animate-in { animation:fadeUp 0.45s ease-out; }
     
     /* BACKGROUND */
-    .cyberpunk-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; background:var(--bg); overflow:hidden; }
+    .cyberpunk-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; background:var(--bg); overflow:hidden; pointer-events:none; }
     @keyframes moveGrid { from { transform:perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); } to { transform:perspective(500px) rotateX(60deg) translateY(40px) translateZ(-200px); } }
-    .cyberpunk-grid { position:absolute; top:-50%; left:-50%; width:200%; height:200%; background-image:linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px); background-size:40px 40px; transform:perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation:moveGrid 5s linear infinite; }
-    .glow-orb { position:absolute; width:400px; height:400px; border-radius:50%; filter:blur(40px); opacity:0.2; z-index:-1; animation:floatOrb 10s ease-in-out infinite alternate; }
+    .cyberpunk-grid { position:absolute; top:-50%; left:-50%; width:200%; height:200%; background-image:linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px); background-size:40px 40px; transform:perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); animation:moveGrid 5s linear infinite; will-change: transform; }
+    .glow-orb { position:absolute; width:400px; height:400px; border-radius:50%; filter:blur(40px); opacity:0.2; z-index:-1; animation:floatOrb 10s ease-in-out infinite alternate; pointer-events:none; will-change: transform; }
     .glow-orb.cyan { background:var(--neon-cyan); top:-100px; left:-100px; }
     .glow-orb.purple { background:var(--neon-purple); bottom:-100px; right:-100px; animation-delay:-5s; }
-    @keyframes floatOrb { 0% { transform:translate(0, 0); } 100% { transform:translate(50px, 50px); } }
+    @keyframes floatOrb { 0% { transform:translate(0, 0) translateZ(0); } 100% { transform:translate(50px, 50px) translateZ(0); } }
     
     /* BRACKET FRAME */
     .bracket-frame { position:relative; display:inline-block; padding:4px; }
@@ -818,7 +820,37 @@
 .bracket-team.loser .bracket-name {
   text-decoration: line-through;
 }
-</style>
+
+    /* ── PERFORMANCE OPTIMIZATIONS ────────────────────────────── */
+    /* GPU compositing for animated elements */
+    .navbar, .card, .modal-overlay, .user-dropdown {
+        will-change: auto;
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+    }
+    /* Defer offscreen content rendering */
+    .video-grid .card, .data-table tbody tr {
+        content-visibility: auto;
+        contain-intrinsic-size: 0 180px;
+    }
+    /* Reduce paint cost on heavy blur elements */
+    @media (max-width: 768px) {
+        .navbar, .modal-overlay { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    }
+    /* Contain layout for sidebar */
+    .navbar { contain: layout style; }
+    /* Reduce repaints from animations */
+    .skeleton { will-change: background-position; }
+    .animate-in, .animate-up { will-change: opacity, transform; }
+    /* Remove expensive transitions on low-end */
+    html.perf-lite * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    html.perf-lite .navbar, html.perf-lite .card { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    html.perf-lite .speed-bg, html.perf-lite .speed-streaks { display: none !important; }
+    html.perf-lite .glow-orb { display: none !important; }
+    /* Font display optimization */
+    @font-face { font-display: swap; }
+
+    </style>
 </head>
 <body>
   <!-- BACKGROUND SPEED -->
@@ -878,7 +910,7 @@
 
 <div class="toasts" id="toasts"></div>
 
-<script src="temp.js?v=25"></script>
+<script src="temp.js?v=26" defer></script>
 
 <script>
 function toggleSidebar() {
