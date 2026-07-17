@@ -174,6 +174,7 @@ async def create_tournament(
                     next_match_id=next_mid
                 )
                 db.add(m)
+            await db.flush()
                 
         await db.commit()
 
