@@ -1776,8 +1776,10 @@ async function submitMatchAdminModal(winner_id) {
     }
 }
 
-async function renderTournamentBracket(tid) {
-  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
+async function renderTournamentBracket(tid, containerId = 'app') {
+  let target = containerId === 'app' ? $('app') : document.getElementById(containerId);
+  if (!target) return;
+  target.innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
   try {
     const t = await apiFetch(`/record-board/tournaments/${tid}`);
     window.currentTournamentData = t;
@@ -2001,7 +2003,7 @@ async function renderTournamentBracket(tid) {
             
             let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
             
-            let adminAttrs = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'ADMIN' && !isBye && m.id) 
+            let adminAttrs = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'ADMIN' && !isBye && m.id && containerId !== 'app') 
                 ? `onclick="openMatchAdminModal(event, '${m.id}')" style="cursor:pointer;" class="bracket-match-wrapper admin-clickable"` 
                 : `class="bracket-match-wrapper ${isBye ? 'is-bye' : ''}"`;
 
@@ -2043,9 +2045,9 @@ async function renderTournamentBracket(tid) {
         </div>
     </div>`;
     
-    $('app').innerHTML = html;
+    target.innerHTML = html;
   } catch (e) {
-    $('app').innerHTML = `<div class="empty">Lỗi tải sơ đồ thi đấu: ${e.message}</div>`;
+    target.innerHTML = `<div class="empty">Lỗi tải sơ đồ thi đấu: ${e.message}</div>`;
   }
 }
 
@@ -2678,8 +2680,8 @@ window.manageTournament = async function(tid) {
               </div>
               
               <div style="flex:2">
-                  <h4>Danh sách Trận đấu (${t.matches.length})</h4>
-                  <div style="max-height:500px;overflow-y:auto;padding-right:10px">${mList}</div>
+                  <h4>Sơ đồ thi đấu</h4>
+                  <div id="admin-bracket-render-target" style="width: 100%; overflow: auto; min-height: 400px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">Đang tải sơ đồ...</div>
               </div>
           </div>
           
@@ -2688,6 +2690,9 @@ window.manageTournament = async function(tid) {
           </div>
         </div>
       `;
+      setTimeout(() => {
+          renderTournamentBracket(t.id, 'admin-bracket-render-target');
+      }, 50);
     }
     
     // Bind to window to allow nested onclicks to access it
