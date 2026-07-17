@@ -1418,7 +1418,7 @@ async function renderAdmin() {
 
   
       if(tab==='tournaments'){
-        apiFetch('/users/admin/users').then(users => {
+        apiFetch('/users').then(users => {
             const el = document.getElementById('tournament_users_checkboxes');
             if(el) {
                 const nonAdmins = users.filter(u => u.role !== 'ADMIN');
