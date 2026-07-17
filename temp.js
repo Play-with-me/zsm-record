@@ -1674,7 +1674,7 @@ window.adminEdit = async function(type, id, itemObj) {
     formHtml = `
       <div class="form-group"><label>Tên</label><input id="edit_name" class="form-input" value="${esc(item.name)}"/></div>
       <div class="form-group"><label>Mô tả</label><input id="edit_desc" class="form-input" value="${esc(item.description)}"/></div>
-      <div class="form-group"><label>Map ID</label><input id="edit_map" class="form-input" value="${esc(item.map_id)}"/></div>
+      <div class="form-group"><label>Map ID</label><input id="edit_map" class="form-input" value="${esc(item.map_id||'')}"/></div>
       <div style="display:flex;gap:10px;">
         <div class="form-group" style="flex:1"><label>Bắt đầu</label><input id="edit_start" type="datetime-local" class="form-input" value="${item.start_time ? item.start_time.substring(0,16) : ''}"/></div>
         <div class="form-group" style="flex:1"><label>Kết thúc</label><input id="edit_end" type="datetime-local" class="form-input" value="${item.end_time ? item.end_time.substring(0,16) : ''}"/></div>
@@ -1703,9 +1703,9 @@ window.doAdminEdit = async function(type, id, modal) {
     else if(type==='tournament') bodyData = {
       name: modal.querySelector('#edit_name').value, 
       description: modal.querySelector('#edit_desc').value, 
-      map_id: modal.querySelector('#edit_map').value, 
-      start_time: new Date(modal.querySelector('#edit_start').value).toISOString(),
-      end_time: new Date(modal.querySelector('#edit_end').value).toISOString()
+      map_id: modal.querySelector('#edit_map').value || null, 
+      start_time: modal.querySelector('#edit_start').value ? new Date(modal.querySelector('#edit_start').value).toISOString() : null,
+      end_time: modal.querySelector('#edit_end').value ? new Date(modal.querySelector('#edit_end').value).toISOString() : null
     };
     
     let endpoint = `/admin/${type}s/${id}`;
@@ -1768,21 +1768,22 @@ window.doAdminEdit = async function(type, id, modal) {
 // ─── ROUTER ──────────────────────────────────────────
 async function router() {
   const hash=window.location.hash.slice(1)||'/';
-  const parts=hash.split('/').filter(Boolean);
+  const path = hash.split('?')[0];
+  const parts=path.split('/').filter(Boolean);
   // Update active nav links
-  document.querySelectorAll('[data-route]').forEach(l=>l.classList.toggle('active',l.dataset.route===hash||(l.dataset.route==='/'&&hash==='/')));
+  document.querySelectorAll('[data-route]').forEach(l=>l.classList.toggle('active',l.dataset.route===path||(l.dataset.route==='/'&&path==='/')));
 
-  if(hash==='/'||hash==='') return renderHome();
-  if(hash==='/login') return renderLogin();
-  if(hash==='/register') return renderRegister();
+  if(path==='/'||path==='') return renderHome();
+  if(path==='/login') return renderLogin();
+  if(path==='/register') return renderRegister();
 
   
 
-  if(hash==='/upload') return renderUpload();
-  if(hash==='/board') return renderBoard();
-  if(hash==='/admin') return renderAdmin();
-  if(hash==='/shop') return renderShop();
-  if(hash==='/inventory') return renderInventory();
+  if(path==='/upload') return renderUpload();
+  if(path==='/board') return renderBoard();
+  if(path==='/admin') return renderAdmin();
+  if(path==='/shop') return renderShop();
+  if(path==='/inventory') return renderInventory();
   if(parts[0]==='video'&&parts[1]) return renderVideo(parts[1]);
   if(parts[0]==='profile'&&parts[1]) return renderProfile(parts[1]);
     if(parts[0]==='insights') return renderInsights();
@@ -1985,14 +1986,24 @@ async function renderTournaments() {
             <h3 style="font-size:2rem; margin-bottom:16px; position:relative; z-index:1;">${esc(t.name)}</h3>
             <p style="font-size:1.2rem; color:var(--text-secondary); margin-bottom:24px; position:relative; z-index:1;">${esc(t.description)}</p>
             
+            ${t.end_time ? `
             <div style="display:inline-block; background:rgba(0,0,0,0.5); padding:16px 32px; border-radius:30px; font-weight:bold; font-size:1.1rem; border:1px solid rgba(255,255,255,0.1); position:relative; z-index:1; margin-bottom:32px;">
               ⏳ Kết thúc vào: <span style="color:var(--neon-cyan);">${dateStr(t.end_time)}</span>
-            </div>
+            </div>` : `
+            <div style="display:inline-block; background:rgba(0,0,0,0.5); padding:16px 32px; border-radius:30px; font-weight:bold; font-size:1.1rem; border:1px solid rgba(255,255,255,0.1); position:relative; z-index:1; margin-bottom:32px; color:var(--neon-cyan);">
+              🔥 Đang diễn ra khốc liệt! 🔥
+            </div>`}
             
             <div>
-              <button class="btn btn-primary btn-lg" onclick="window.location.hash='#/board?map=${t.map_id}'" style="box-shadow:var(--neon-glow-pink); font-size:1.2rem; padding:12px 32px; position:relative; z-index:1;">
-                Xem Bảng Xếp Hạng Giải
-              </button>
+              <div style="display:flex; gap:16px; justify-content:center; position:relative; z-index:1;">
+                <button class="btn btn-primary btn-lg" onclick="window.location.hash='#/tournaments/bracket/${t.id}'" style="box-shadow:var(--neon-glow-pink); font-size:1.2rem; padding:12px 32px;">
+                  Xem Sơ Đồ Thi Đấu
+                </button>
+                ${t.map_id ? `
+                <button class="btn btn-outline btn-lg" onclick="window.location.hash='#/board?map=${t.map_id}'" style="font-size:1.2rem; padding:12px 32px;">
+                  Bảng Xếp Hạng Giải
+                </button>` : ''}
+              </div>
             </div>
           </div>
         </div>
