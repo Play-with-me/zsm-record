@@ -1545,7 +1545,7 @@ window.doAdminDelete = async function(type, id, modal) {
     let endpoint = `/admin/${type}s/${id}`;
     if(type==='tournament') endpoint = `/record-board/tournaments/${id}`;
     if(type==='shopItem') endpoint = `/shop/admin/items/${id}`;
-    if(type==='user') endpoint = `/users/admin/users/${id}`;
+    if(type==='user') endpoint = `/users/${id}`;
     await apiFetch(endpoint, {method: 'DELETE'});
     toast('Đã xóa thành công!');
     modal.remove();
@@ -1768,11 +1768,11 @@ async function submitMatchAdminModal(winner_id) {
     
     try {
         await apiFetch(`/record-board/tournaments/${tid}/matches/${currentMatchModalMid}`, {method: 'PUT', body: JSON.stringify(payload)});
-        showToast('Cập nhật kết quả thành công!', 'success');
+        toast('Cập nhật kết quả thành công!', 'success');
         clearApiCache();
         await renderTournamentBracket(tid);
     } catch(e) {
-        showToast(e.message, 'error');
+        toast(e.message, 'error');
     }
 }
 
@@ -2628,7 +2628,7 @@ window.manageTournament = async function(tid) {
   
   try {
     const t = await apiFetch(`/record-board/tournaments/${tid}`);
-    let users = await apiFetch('/users/admin/users'); // need all users to select from
+    let users = await apiFetch('/users'); // need all users to select from
     
     function render() {
       let pList = t.participants.map(p => `
@@ -2704,7 +2704,7 @@ window.manageTournament = async function(tid) {
     render();
     
   } catch(e) {
-      showToast('Lỗi tải data nhánh', 'error');
+      toast('Lỗi tải data nhánh', 'error');
       overlay.remove();
   }
 }
@@ -2715,22 +2715,22 @@ window.addParticipant = async function(tid) {
     try {
         await apiFetch(`/record-board/tournaments/${tid}/participants`, {method: 'POST', body: JSON.stringify({user_id: uid})});
         await window.currentTournamentRender();
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { toast(e.message, 'error'); }
 }
 window.removeParticipant = async function(tid, uid) {
     if(!confirm('Xóa tuyển thủ này?')) return;
     try {
         await apiFetch(`/record-board/tournaments/${tid}/participants/${uid}`, {method: 'DELETE'});
         await window.currentTournamentRender();
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { toast(e.message, 'error'); }
 }
 window.generateBracket = async function(tid) {
     if(!confirm('Tạo nhánh đấu sẽ XÓA TOÀN BỘ các trận đấu hiện tại. Bạn chắc chắn chứ?')) return;
     try {
         await apiFetch(`/record-board/tournaments/${tid}/generate`, {method: 'POST'});
-        showToast('Đã tạo nhánh thành công!');
+        toast('Đã tạo nhánh thành công!');
         await window.currentTournamentRender();
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { toast(e.message, 'error'); }
 }
 
 window.setMatchPlayer = async function(tid, mid, field, currentUid) {
@@ -2741,7 +2741,7 @@ window.setMatchPlayer = async function(tid, mid, field, currentUid) {
         payload[field] = newUid.trim() || null;
         await apiFetch(`/record-board/tournaments/${tid}/matches/${mid}`, {method: 'PUT', body: JSON.stringify(payload)});
         await window.currentTournamentRender();
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { toast(e.message, 'error'); }
 }
 
 window.setMatchWinner = async function(tid, mid, p1, p2) {
@@ -2750,10 +2750,10 @@ window.setMatchWinner = async function(tid, mid, p1, p2) {
     winner = winner.trim().toUpperCase();
     let payload = { winner_id: null };
     if(winner === '1') {
-        if(p1 === 'null') { showToast('Player 1 rỗng!', 'error'); return; }
+        if(p1 === 'null') { toast('Player 1 rỗng!', 'error'); return; }
         payload.winner_id = p1;
     } else if(winner === '2') {
-        if(p2 === 'null') { showToast('Player 2 rỗng!', 'error'); return; }
+        if(p2 === 'null') { toast('Player 2 rỗng!', 'error'); return; }
         payload.winner_id = p2;
     } else if (winner === 'X') {
         payload.winner_id = '';
@@ -2763,7 +2763,7 @@ window.setMatchWinner = async function(tid, mid, p1, p2) {
     
     try {
         await apiFetch(`/record-board/tournaments/${tid}/matches/${mid}`, {method: 'PUT', body: JSON.stringify(payload)});
-        showToast('Cập nhật kết quả thành công');
+        toast('Cập nhật kết quả thành công');
         await window.currentTournamentRender();
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { toast(e.message, 'error'); }
 }
