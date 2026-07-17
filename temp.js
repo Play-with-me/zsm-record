@@ -1553,7 +1553,7 @@ async function renderAdmin() {
 window.adminDelete = async function(type, id, name) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  $('app').innerHTML = `<div class="modal">
+  overlay.innerHTML = `<div class="modal">
     <h3 style="margin-bottom:10px;color:var(--red)">Xác nhận Xóa</h3>
     <p style="margin-bottom:20px;">Bạn có chắc chắn muốn xóa <b>${esc(name)}</b>?<br/>Hành động này không thể hoàn tác.</p>
     <div class="modal-actions">
@@ -1637,7 +1637,7 @@ window.adminEdit = async function(type, id, itemObj) {
     `;
   }
 
-  $('app').innerHTML = `<div class="modal">
+  overlay.innerHTML = `<div class="modal">
     <h3 style="margin-bottom:15px;color:var(--neon-cyan)">Sửa Thông Tin</h3>
     ${formHtml}
     <div class="modal-actions" style="margin-top:20px;">
