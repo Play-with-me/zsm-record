@@ -1761,6 +1761,11 @@ async function renderTournamentBracket(tid) {
             border-color: rgba(0, 255, 255, 0.3);
             box-shadow: 0 8px 32px rgba(0, 255, 255, 0.15);
         }
+        
+        .bracket-match-wrapper.is-bye {
+            visibility: hidden;
+        }
+
         .bracket-match.completed {
             border-color: rgba(0, 255, 255, 0.4);
         }
