@@ -1693,10 +1693,75 @@ window.doAdminEdit = async function(type, id, modal) {
   renderTab();
 }
 
+let currentMatchModalMid = null;
+
+function openMatchAdminModal(mid) {
+    if(!window.currentTournamentData || !window.currentTournamentData.matches) return;
+    let m = window.currentTournamentData.matches.find(x => x.id === mid);
+    if(!m) return;
+    
+    currentMatchModalMid = mid;
+    
+    let modalHtml = document.getElementById('matchAdminModalContainer');
+    if(!modalHtml) {
+        modalHtml = document.createElement('div');
+        modalHtml.id = 'matchAdminModalContainer';
+        document.body.appendChild(modalHtml);
+    }
+    
+    let p1Name = m.player1 ? esc(m.player1.username) : 'Chưa có người chơi';
+    let p2Name = m.player2 ? esc(m.player2.username) : 'Chưa có người chơi';
+    let p1Id = m.player1_id || '';
+    let p2Id = m.player2_id || '';
+    
+    let btnP1 = p1Id ? `<button class="btn btn-primary btn-block mb-3" style="font-size:1.2rem; padding:12px; background:linear-gradient(90deg, #ff007f, #7928ca);" onclick="submitMatchAdminModal('${p1Id}')">🏆 Cho <b>${p1Name}</b> Thắng</button>` : `<button class="btn btn-secondary btn-block mb-3" disabled>${p1Name}</button>`;
+    
+    let btnP2 = p2Id ? `<button class="btn btn-primary btn-block mb-3" style="font-size:1.2rem; padding:12px; background:linear-gradient(90deg, #00f2fe, #4facfe);" onclick="submitMatchAdminModal('${p2Id}')">🏆 Cho <b>${p2Name}</b> Thắng</button>` : `<button class="btn btn-secondary btn-block mb-3" disabled>${p2Name}</button>`;
+
+    modalHtml.innerHTML = `
+    <div class="modal fade show" tabindex="-1" style="display:block; background:rgba(0,0,0,0.8);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--neon-pink); box-shadow:0 0 20px rgba(255,107,158,0.3);">
+                <div class="modal-header" style="border-bottom:1px solid rgba(255,107,158,0.2);">
+                    <h5 class="modal-title" style="color:var(--neon-pink);">Cập nhật kết quả trận đấu</h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('matchAdminModalContainer').innerHTML=''"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <p class="mb-4 text-muted">Chọn người chiến thắng để đưa họ vào vòng tiếp theo:</p>
+                    ${btnP1}
+                    <div class="my-3 font-weight-bold" style="color:var(--text-muted)">VS</div>
+                    ${btnP2}
+                    
+                    <hr class="my-4" style="border-color:rgba(255,255,255,0.1)">
+                    <button class="btn btn-outline-danger btn-sm" onclick="submitMatchAdminModal('')">↺ Hủy kết quả (Reset trận này)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+async function submitMatchAdminModal(winner_id) {
+    if(!currentMatchModalMid || !window.currentTournamentData) return;
+    let tid = window.currentTournamentData.id;
+    let payload = winner_id ? { winner_id } : { winner_id: null };
+    
+    document.getElementById('matchAdminModalContainer').innerHTML = ''; // close modal
+    
+    try {
+        await apiFetch(`/record-board/tournaments/${tid}/matches/${currentMatchModalMid}`, 'PUT', payload);
+        showToast('Cập nhật kết quả thành công!', 'success');
+        await renderTournamentBracket(tid);
+    } catch(e) {
+        showToast(e.message, 'error');
+    }
+}
+
 async function renderTournamentBracket(tid) {
   $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
   try {
     const t = await apiFetch(`/record-board/tournaments/${tid}`);
+    window.currentTournamentData = t;
     
     let rounds = {};
     let roundKeys = [];
@@ -1854,6 +1919,10 @@ async function renderTournamentBracket(tid) {
             padding-bottom: 8px;
             font-weight: 800;
         }
+        .admin-clickable:hover .bracket-match {
+            border-color: var(--neon-cyan);
+            cursor: pointer;
+        }
     </style>`;
     
     let roundsHtml = '';
@@ -1913,8 +1982,12 @@ async function renderTournamentBracket(tid) {
             
             let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
             
+            let adminAttrs = (window.currentUser && window.currentUser.role === 'ADMIN' && !isBye && m.id) 
+                ? `onclick="openMatchAdminModal('${m.id}')" style="cursor:pointer;" class="bracket-match-wrapper admin-clickable"` 
+                : `class="bracket-match-wrapper ${isBye ? 'is-bye' : ''}"`;
+
             return `
-            <div class="bracket-match-wrapper ${isBye ? 'is-bye' : ''}">
+            <div ${adminAttrs}>
                 <div class="bracket-match ${m.is_completed ? 'completed' : ''}">
                     <div class="match-header">${matchTitle}</div>
                     <div class="match-player ${p1Class}">
