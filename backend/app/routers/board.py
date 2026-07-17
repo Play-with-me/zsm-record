@@ -146,7 +146,7 @@ async def create_tournament(
             if r == total - 2: return "Tứ Kết"
             return f"Vòng {r}"
             
-        for r in range(1, total_rounds + 1):
+        for r in range(total_rounds, 0, -1):
             matches_in_round = bracket_size // (2 ** r)
             for i in range(matches_in_round):
                 mid = matches_dict[(r, i)]
