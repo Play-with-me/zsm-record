@@ -1902,14 +1902,15 @@ async function renderTournamentBracket(tid) {
             let p1Html = m.player1 ? esc(m.player1.username) : '&nbsp;';
             let p2Html = m.player2 ? esc(m.player2.username) : '&nbsp;';
             
+            // Check if this is a BYE match (Round 1, completed automatically, no opponent)
+            let isBye = m.round_sequence === 1 && m.is_completed && m.player1 && !m.player2;
+
             let isP1Winner = m.winner_id && m.winner_id === m.player1_id;
             let isP2Winner = m.winner_id && m.winner_id === m.player2_id;
             
-            let p1Class = isP1Winner ? 'winner' : (m.is_completed ? 'loser' : '');
-            let p2Class = isP2Winner ? 'winner' : (m.is_completed ? 'loser' : '');
+            let p1Class = (isP1Winner && !isBye) ? 'winner' : (m.is_completed && !isBye ? 'loser' : '');
+            let p2Class = (isP2Winner && !isBye) ? 'winner' : (m.is_completed && !isBye ? 'loser' : '');
             
-            // Check if this is a BYE match (Round 1, completed automatically, no opponent)
-            let isBye = m.round_sequence === 1 && m.is_completed && m.player1 && !m.player2;
             let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
             
             return `
@@ -1918,11 +1919,11 @@ async function renderTournamentBracket(tid) {
                     <div class="match-header">${matchTitle}</div>
                     <div class="match-player ${p1Class}">
                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p1Html}</span>
-                        ${isP1Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
+                        ${(isP1Winner && !isBye) ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
                     </div>
                     <div class="match-player ${p2Class}">
                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p2Html}</span>
-                        ${isP2Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
+                        ${(isP2Winner && !isBye) ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
                     </div>
                 </div>
             </div>`;
