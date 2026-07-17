@@ -1845,14 +1845,51 @@ async function renderTournamentBracket(tid) {
         }
     </style>`;
     
-    let roundsHtml = roundKeys.map(rk => {
+    let roundsHtml = '';
+    if (t.matches && t.matches.length > 0) {
+        // Find max round sequence
+        let maxRound = Math.max(...t.matches.map(m => m.round_sequence));
+        
+        // Pad rounds to guarantee mathematically perfect tree structure
+        for (let i = 1; i <= maxRound; i++) {
+            let expectedMatches = Math.pow(2, maxRound - i);
+            if (!rounds[i]) rounds[i] = [];
+            
+            // Try to find an existing round name for this sequence, otherwise generate one
+            let existingRoundName = rounds[i].length > 0 ? rounds[i][0].round_name : (i === maxRound ? 'Chung Kết' : (i === maxRound - 1 ? 'Bán Kết' : (i === maxRound - 2 ? 'Tứ Kết' : 'Vòng ' + i)));
+            
+            let currentMatches = rounds[i];
+            let newMatches = [];
+            
+            for (let j = 0; j < expectedMatches; j++) {
+                let existing = currentMatches.find(m => m.match_index === j);
+                if (existing) {
+                    newMatches.push(existing);
+                } else {
+                    // Create dummy missing match to maintain geometric tree integrity
+                    newMatches.push({
+                        round_name: existingRoundName,
+                        round_sequence: i,
+                        match_index: j,
+                        player1: null,
+                        player2: null,
+                        winner_id: null,
+                        is_completed: false
+                    });
+                }
+            }
+            rounds[i] = newMatches;
+        }
+        roundKeys = Object.keys(rounds).sort((a,b) => parseInt(a) - parseInt(b));
+    }
+    
+    roundsHtml = roundKeys.map(rk => {
         let matches = rounds[rk].sort((a,b) => a.match_index - b.match_index);
         let roundName = matches[0].round_name;
         
         let matchesHtml = matches.map(m => {
-            let isDummy = !m.id; // if it's the dummy bracket, m has no id
-            let p1Name = m.player1 ? m.player1.username : (isDummy ? 'TBD' : 'BYE');
-            let p2Name = m.player2 ? m.player2.username : (isDummy ? 'TBD' : 'BYE');
+            let p1Html = m.player1 ? esc(m.player1.username) : '&nbsp;';
+            let p2Html = m.player2 ? esc(m.player2.username) : '&nbsp;';
             
             let isP1Winner = m.winner_id && m.winner_id === m.player1_id;
             let isP2Winner = m.winner_id && m.winner_id === m.player2_id;
@@ -1867,11 +1904,11 @@ async function renderTournamentBracket(tid) {
                 <div class="bracket-match ${m.is_completed ? 'completed' : ''}">
                     <div class="match-header">${matchTitle}</div>
                     <div class="match-player ${p1Class}">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p1Name)}</span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p1Html}</span>
                         ${isP1Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
                     </div>
                     <div class="match-player ${p2Class}">
-                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p2Name)}</span>
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p2Html}</span>
                         ${isP2Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
                     </div>
                 </div>
