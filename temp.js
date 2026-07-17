@@ -1534,7 +1534,6 @@ window.doAdminEdit = async function(type, id, modal) {
                 participants: participants
             })
         });
-      })});
       }
       clearApiCache();
       toast('Đã thêm thành công!'); renderTab();
