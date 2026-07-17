@@ -173,68 +173,37 @@ from . import seed_shop
 
 @app.on_event("startup")
 async def startup():
+    # Run create_all in its own transaction
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
-        # Try to add missing columns to avoid breaking if table already exists
+    # Helper to run raw SQL safely without aborting other migrations in PostgreSQL
+    async def run_sql(sql):
         try:
-            await conn.execute(text("ALTER TABLE tournaments ADD COLUMN format VARCHAR(50) DEFAULT 'SINGLE'"))
+            async with engine.begin() as conn:
+                await conn.execute(text(sql))
         except Exception:
             pass
-        try:
-            await conn.execute(text("ALTER TABLE tournaments ADD COLUMN status VARCHAR(50) DEFAULT 'DRAFT'"))
-        except Exception:
-            pass
-        # Drop NOT NULL constraints that were modified in models.py
-        try:
-            await conn.execute(text("ALTER TABLE tournaments ALTER COLUMN map_id DROP NOT NULL"))
-        except Exception:
-            pass
-        try:
-            await conn.execute(text("ALTER TABLE tournaments ALTER COLUMN start_time DROP NOT NULL"))
-        except Exception:
-            pass
-        try:
-            await conn.execute(text("ALTER TABLE tournaments ALTER COLUMN end_time DROP NOT NULL"))
-        except Exception:
-            pass
-        
+
+    await run_sql("ALTER TABLE tournaments ADD COLUMN format VARCHAR(50) DEFAULT 'SINGLE'")
+    await run_sql("ALTER TABLE tournaments ADD COLUMN status VARCHAR(50) DEFAULT 'DRAFT'")
+    
+    await run_sql("ALTER TABLE tournaments ALTER COLUMN map_id DROP NOT NULL")
+    await run_sql("ALTER TABLE tournaments ALTER COLUMN start_time DROP NOT NULL")
+    await run_sql("ALTER TABLE tournaments ALTER COLUMN end_time DROP NOT NULL")
+    
+    await run_sql("ALTER TABLE maps ADD COLUMN difficulty INTEGER DEFAULT 1")
+    await run_sql("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
+    await run_sql("ALTER TABLE users ADD COLUMN avatar_update_count INTEGER DEFAULT 0")
+    await run_sql("ALTER TABLE users ADD COLUMN exp INTEGER DEFAULT 0")
+    await run_sql("ALTER TABLE users ADD COLUMN coins INTEGER DEFAULT 0")
+    
     try:
         pass
         # await seed_shop.seed_shop()  # Disabled to prevent auto-restoring deleted items
     except Exception as e:
         print(f"Error seeding shop: {e}")
         
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("ALTER TABLE maps ADD COLUMN difficulty INTEGER DEFAULT 1"))
-    except Exception:
-        pass
-
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
-    except Exception:
-        pass
-
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN avatar_update_count INTEGER DEFAULT 0"))
-    except Exception:
-        pass
-
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN exp INTEGER DEFAULT 0"))
-    except Exception:
-        pass
-
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("ALTER TABLE users ADD COLUMN coins INTEGER DEFAULT 0"))
-    except Exception:
-        pass
-
     try:
         await reseed_maps()
         await reseed_cars()
