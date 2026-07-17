@@ -1414,9 +1414,7 @@ async function renderAdmin() {
           <div id="admin-t-list" style="margin-top:20px;">Đang tải danh sách giải...</div>
         `:''}
       </div>`;
-    }
 
-  
       if(tab==='tournaments'){
         apiFetch('/users').then(users => {
             const el = document.getElementById('tournament_users_checkboxes');
@@ -1440,6 +1438,7 @@ async function renderAdmin() {
             if(el) el.innerHTML = 'Lỗi tải: ' + e.message;
         });
       }
+    }
 
     window.adminTab=(t)=>{ tab=t; renderTab(); };
   
