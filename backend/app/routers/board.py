@@ -119,7 +119,7 @@ async def create_tournament(
         await db.flush()
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail="Tên giải đấu đã tồn tại hoặc lỗi CSDL")
+        raise HTTPException(status_code=400, detail=f"Lỗi CSDL (1): {str(e)}")
     
     if len(t.participants) > 1 and t.format == 'SINGLE':
         uids = list(t.participants)
