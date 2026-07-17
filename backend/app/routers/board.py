@@ -184,11 +184,15 @@ async def create_tournament(
 
 @router.get('/tournaments', response_model=List[schemas.TournamentResponse])
 async def get_all_tournaments(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(models.Tournament)
-        .options(selectinload(models.Tournament.map))
-    )
-    return result.scalars().all()
+    try:
+        result = await db.execute(
+            select(models.Tournament)
+            .options(selectinload(models.Tournament.map))
+        )
+        return result.scalars().all()
+    except Exception as e:
+        import traceback
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 @router.get('/tournaments/{t_id}', response_model=schemas.TournamentDetailResponse)
 async def get_tournament_detail(t_id: str, db: AsyncSession = Depends(get_db)):
