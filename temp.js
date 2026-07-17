@@ -1772,7 +1772,7 @@ async function renderTournamentBracket(tid) {
             top: 50%;
             right: -25px;
             width: 25px;
-            height: calc(50% + 15px);
+            height: 50%;
             border-top: 2px solid rgba(0, 255, 255, 0.3);
             border-right: 2px solid rgba(0, 255, 255, 0.3);
             border-top-right-radius: 4px;
@@ -1783,7 +1783,7 @@ async function renderTournamentBracket(tid) {
             bottom: 50%;
             right: -25px;
             width: 25px;
-            height: calc(50% + 15px);
+            height: 50%;
             border-bottom: 2px solid rgba(0, 255, 255, 0.3);
             border-right: 2px solid rgba(0, 255, 255, 0.3);
             border-bottom-right-radius: 4px;
@@ -1850,8 +1850,9 @@ async function renderTournamentBracket(tid) {
         let roundName = matches[0].round_name;
         
         let matchesHtml = matches.map(m => {
-            let p1Name = m.player1 ? m.player1.username : '---';
-            let p2Name = m.player2 ? m.player2.username : '---';
+            let isDummy = !m.id; // if it's the dummy bracket, m has no id
+            let p1Name = m.player1 ? m.player1.username : (isDummy ? 'TBD' : 'BYE');
+            let p2Name = m.player2 ? m.player2.username : (isDummy ? 'TBD' : 'BYE');
             
             let isP1Winner = m.winner_id && m.winner_id === m.player1_id;
             let isP2Winner = m.winner_id && m.winner_id === m.player2_id;
@@ -1859,10 +1860,12 @@ async function renderTournamentBracket(tid) {
             let p1Class = isP1Winner ? 'winner' : (m.is_completed ? 'loser' : '');
             let p2Class = isP2Winner ? 'winner' : (m.is_completed ? 'loser' : '');
             
+            let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
+            
             return `
             <div class="bracket-match-wrapper">
                 <div class="bracket-match ${m.is_completed ? 'completed' : ''}">
-                    <div class="match-header">Trận ${m.match_index + 1}</div>
+                    <div class="match-header">${matchTitle}</div>
                     <div class="match-player ${p1Class}">
                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p1Name)}</span>
                         ${isP1Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
