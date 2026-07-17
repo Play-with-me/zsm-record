@@ -115,8 +115,11 @@ async def create_tournament(
         status=models.TournamentStatusEnum.ONGOING if len(t.participants) > 1 else models.TournamentStatusEnum.DRAFT
     )
     db.add(new_t)
-    await db.commit()
-    await db.refresh(new_t)
+    try:
+        await db.flush()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Tên giải đấu đã tồn tại hoặc lỗi CSDL")
     
     if len(t.participants) > 1 and t.format == 'SINGLE':
         uids = list(t.participants)
@@ -128,7 +131,7 @@ async def create_tournament(
             db.add(part)
             parts.append(uid)
             
-        await db.commit()
+        await db.flush()
         
         num_p = len(parts)
         bracket_size = 2 ** math.ceil(math.log2(num_p))
@@ -176,7 +179,11 @@ async def create_tournament(
                 db.add(m)
             await db.flush()
                 
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(status_code=400, detail=f"Lỗi dữ liệu: {str(e)}")
 
     res = await db.execute(select(models.Tournament).options(selectinload(models.Tournament.map)).filter(models.Tournament.id == new_t.id))
     return res.scalars().first()
