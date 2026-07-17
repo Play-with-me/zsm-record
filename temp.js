@@ -1522,78 +1522,6 @@ async function renderAdmin() {
 
     window.adminTab=(t)=>{ tab=t; renderTab(); };
   
-async function renderTournamentBracket(tid) {
-  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
-  try {
-    const t = await apiFetch(`/record-board/tournaments/${tid}`);
-    
-    // Group matches by round_sequence
-    const rounds = {};
-    t.matches.forEach(m => {
-        if(!rounds[m.round_sequence]) rounds[m.round_sequence] = [];
-        rounds[m.round_sequence].push(m);
-    });
-    
-    // Sort rounds
-    const roundKeys = Object.keys(rounds).sort((a,b) => parseInt(a) - parseInt(b));
-    
-    let roundsHtml = roundKeys.map(rk => {
-        let matches = rounds[rk].sort((a,b) => a.match_index - b.match_index);
-        let roundName = matches[0].round_name;
-        
-        let matchesHtml = matches.map(m => {
-            let p1Name = m.player1 ? m.player1.username : '---';
-            let p2Name = m.player2 ? m.player2.username : '---';
-            
-            let isP1Winner = m.winner_id === m.player1_id;
-            let isP2Winner = m.winner_id === m.player2_id;
-            
-            let p1Style = isP1Winner ? 'color: var(--neon-cyan); font-weight: bold; text-shadow: var(--neon-glow-cyan);' : (m.is_completed ? 'color: #555; text-decoration: line-through;' : 'color: #eee;');
-            let p2Style = isP2Winner ? 'color: var(--neon-cyan); font-weight: bold; text-shadow: var(--neon-glow-cyan);' : (m.is_completed ? 'color: #555; text-decoration: line-through;' : 'color: #eee;');
-            
-            return `
-            <div style="background: linear-gradient(145deg, rgba(20,20,20,0.8), rgba(10,10,10,0.9)); border: 1px solid ${m.is_completed ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; padding: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 220px; position: relative;">
-                <div style="font-size: 0.75rem; color: #888; text-align: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Trận ${m.match_index + 1}</div>
-                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; ${p1Style}">
-                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p1Name)}</span>
-                    ${isP1Winner ? '<i class="fas fa-trophy" style="font-size:0.8rem"></i>' : ''}
-                </div>
-                <div style="display:flex; justify-content:space-between; ${p2Style}">
-                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p2Name)}</span>
-                    ${isP2Winner ? '<i class="fas fa-trophy" style="font-size:0.8rem"></i>' : ''}
-                </div>
-            </div>`;
-        }).join('');
-        
-        return `
-        <div style="display: flex; flex-direction: column; align-items: center; min-width: 260px;">
-            <h3 style="color: var(--neon-pink); text-transform: uppercase; font-size: 1.2rem; margin-bottom: 20px; text-shadow: var(--neon-glow-pink); border-bottom: 2px solid var(--neon-pink); padding-bottom: 5px;">${roundName}</h3>
-            <div style="display: flex; flex-direction: column; justify-content: space-around; flex: 1; position: relative;">
-                ${matchesHtml}
-            </div>
-        </div>`;
-    }).join('');
-    
-    let html = `
-    <div class="animate-in fade-in slide-in">
-        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Sơ Đồ Thi Đấu: <span style="color:var(--neon-cyan)">${esc(t.name)}</span></h2>
-            <button class="btn btn-outline" onclick="window.location.hash='#/tournaments'">&larr; Quay lại</button>
-        </div>
-        
-        <div style="overflow-x: auto; padding: 20px 0; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-            <div style="display: flex; flex-direction: row; justify-content: flex-start; min-width: max-content; padding: 0 40px;">
-                ${roundsHtml}
-            </div>
-        </div>
-    </div>`;
-    
-    $('app').innerHTML = html;
-  } catch (e) {
-    $('app').innerHTML = `<div class="empty">Lỗi tải sơ đồ thi đấu: ${e.message}</div>`;
-  }
-}
-
 // --- ADMIN CRUD LOGIC ---
 window.adminDelete = async function(type, id, name) {
   const overlay = document.createElement('div');
@@ -1764,6 +1692,215 @@ window.doAdminEdit = async function(type, id, modal) {
 
   renderTab();
 }
+
+async function renderTournamentBracket(tid) {
+  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
+  try {
+    const t = await apiFetch(`/record-board/tournaments/${tid}`);
+    
+    let rounds = {};
+    let roundKeys = [];
+    
+    // If no matches yet, build a dummy 8-player empty bracket
+    if (!t.matches || t.matches.length === 0) {
+        rounds = {
+            1: [{round_name: 'Tứ Kết', match_index: 0}, {round_name: 'Tứ Kết', match_index: 1}, {round_name: 'Tứ Kết', match_index: 2}, {round_name: 'Tứ Kết', match_index: 3}],
+            2: [{round_name: 'Bán Kết', match_index: 0}, {round_name: 'Bán Kết', match_index: 1}],
+            3: [{round_name: 'Chung Kết', match_index: 0}]
+        };
+        roundKeys = ['1', '2', '3'];
+    } else {
+        t.matches.forEach(m => {
+            if(!rounds[m.round_sequence]) rounds[m.round_sequence] = [];
+            rounds[m.round_sequence].push(m);
+        });
+        roundKeys = Object.keys(rounds).sort((a,b) => parseInt(a) - parseInt(b));
+    }
+    
+    const bracketStyles = `
+    <style>
+        .bracket-wrapper {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            padding: 40px;
+            background: linear-gradient(180deg, #0a0a0f 0%, #11111a 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            gap: 50px;
+        }
+        .bracket-round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            min-width: 240px;
+            position: relative;
+        }
+        .bracket-match-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+        }
+        .bracket-match {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(20, 20, 25, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            position: relative;
+            margin: 15px 0;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        .bracket-match:hover {
+            transform: scale(1.02);
+            border-color: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 255, 255, 0.15);
+        }
+        .bracket-match.completed {
+            border-color: rgba(0, 255, 255, 0.4);
+        }
+        
+        /* Connecting Lines */
+        .bracket-round:not(:last-child) .bracket-match-wrapper:nth-child(odd)::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -25px;
+            width: 25px;
+            height: calc(50% + 15px);
+            border-top: 2px solid rgba(0, 255, 255, 0.3);
+            border-right: 2px solid rgba(0, 255, 255, 0.3);
+            border-top-right-radius: 4px;
+        }
+        .bracket-round:not(:last-child) .bracket-match-wrapper:nth-child(even)::after {
+            content: '';
+            position: absolute;
+            bottom: 50%;
+            right: -25px;
+            width: 25px;
+            height: calc(50% + 15px);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+            border-right: 2px solid rgba(0, 255, 255, 0.3);
+            border-bottom-right-radius: 4px;
+        }
+        .bracket-round:not(:first-child) .bracket-match-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -25px;
+            width: 25px;
+            height: 2px;
+            background: rgba(0, 255, 255, 0.3);
+        }
+        
+        .match-player {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            color: #ccc;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .match-player:last-child {
+            border-bottom: none;
+        }
+        .match-player.winner {
+            color: #0ff;
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+            background: linear-gradient(90deg, rgba(0, 255, 255, 0.1) 0%, transparent 100%);
+        }
+        .match-player.loser {
+            color: #555;
+            text-decoration: line-through;
+        }
+        .match-header {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 4px;
+            background: rgba(0,0,0,0.5);
+            color: #888;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .round-title {
+            text-align: center;
+            color: var(--neon-pink);
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 107, 158, 0.5);
+            border-bottom: 2px solid var(--neon-pink);
+            padding-bottom: 8px;
+            font-weight: 800;
+        }
+    </style>`;
+    
+    let roundsHtml = roundKeys.map(rk => {
+        let matches = rounds[rk].sort((a,b) => a.match_index - b.match_index);
+        let roundName = matches[0].round_name;
+        
+        let matchesHtml = matches.map(m => {
+            let p1Name = m.player1 ? m.player1.username : '---';
+            let p2Name = m.player2 ? m.player2.username : '---';
+            
+            let isP1Winner = m.winner_id && m.winner_id === m.player1_id;
+            let isP2Winner = m.winner_id && m.winner_id === m.player2_id;
+            
+            let p1Class = isP1Winner ? 'winner' : (m.is_completed ? 'loser' : '');
+            let p2Class = isP2Winner ? 'winner' : (m.is_completed ? 'loser' : '');
+            
+            return `
+            <div class="bracket-match-wrapper">
+                <div class="bracket-match ${m.is_completed ? 'completed' : ''}">
+                    <div class="match-header">Trận ${m.match_index + 1}</div>
+                    <div class="match-player ${p1Class}">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p1Name)}</span>
+                        ${isP1Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
+                    </div>
+                    <div class="match-player ${p2Class}">
+                        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p2Name)}</span>
+                        ${isP2Winner ? '<i class="fas fa-trophy" style="color:gold"></i>' : ''}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+        
+        return `
+        <div class="bracket-round">
+            <div class="round-title">${roundName}</div>
+            ${matchesHtml}
+        </div>`;
+    }).join('');
+    
+    let html = `
+    ${bracketStyles}
+    <div class="animate-in fade-in slide-in">
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="font-size: 2.2rem; margin: 0;">Sơ Đồ Thi Đấu: <span style="color:var(--neon-cyan); text-shadow: var(--neon-glow-cyan);">${esc(t.name)}</span></h2>
+            <button class="btn btn-outline" onclick="window.location.hash='#/tournaments'" style="font-size:1.1rem; padding: 10px 24px;">&larr; Quay lại</button>
+        </div>
+        
+        <div class="bracket-wrapper">
+            ${roundsHtml}
+        </div>
+    </div>`;
+    
+    $('app').innerHTML = html;
+  } catch (e) {
+    $('app').innerHTML = `<div class="empty">Lỗi tải sơ đồ thi đấu: ${e.message}</div>`;
+  }
+}
+
 
 // ─── ROUTER ──────────────────────────────────────────
 async function router() {
