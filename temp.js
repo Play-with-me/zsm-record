@@ -1533,7 +1533,7 @@ async function renderAdmin() {
         });
         apiFetch('/record-board/tournaments').then(tList=>{
           if(tList && tList.length){
-            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Trạng thái</th><th>Thể thức</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${t.status}</td><td>${t.format}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="window.location.hash='#/tournaments/bracket/' + '${t.id}'">Nhánh</button> <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
+            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Trạng thái</th><th>Thể thức</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${t.status}</td><td>${t.format}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="window.location.hash='#/admin/tournaments/bracket/' + '${t.id}'">Nhánh</button> <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
             const el = document.getElementById('admin-t-list');
             if(el) el.innerHTML = html;
           }else{
@@ -2029,7 +2029,7 @@ async function renderTournamentBracket(tid, containerId = 'app') {
             
             let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
             
-            let adminAttrs = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'ADMIN' && !isBye && m.id) 
+            let adminAttrs = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'ADMIN' && !isBye && m.id && containerId !== 'app') 
                 ? `onclick="openMatchAdminModal(event, '${m.id}')" style="cursor:pointer;" class="bracket-match-wrapper admin-clickable"` 
                 : `class="bracket-match-wrapper ${isBye ? 'is-bye' : ''}"`;
 
@@ -2091,7 +2091,10 @@ async function router() {
   if(path==='/register') return renderRegister();
   if(path==='/upload') return renderUpload();
   if(path==='/board') return renderBoard();
-
+    if(path.startsWith('/admin/tournaments/bracket/')) {
+      const tid = path.split('/')[4];
+      if(tid) return window.renderAdminTournamentBracket(tid);
+    }
   if(path==='/admin') return renderAdmin();
   if(path==='/shop') return renderShop();
   if(path==='/inventory') return renderInventory();
@@ -2656,3 +2659,180 @@ window.clearAllShopItems = async function() {
 
 
 // --- BRACKET MANAGER ---
+window.renderAdminTournamentBracket = async function(tid) {
+  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
+  
+  try {
+    const t = await apiFetch(`/record-board/tournaments/${tid}`);
+    let users = await apiFetch('/users'); // need all users to select from
+    
+    function render() {
+      let pList = t.participants.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:rgba(255,255,255,0.05);margin-bottom:4px;border-radius:4px;">
+          <div><b>${esc(p.user.username)}</b></div>
+          <button class="btn btn-danger btn-sm" onclick="removeParticipant('${t.id}', '${p.user_id}')">Xóa</button>
+        </div>
+      `).join('');
+      
+      let mList = t.matches.sort((a,b)=> a.round_sequence - b.round_sequence || a.match_index - b.match_index).map(m => {
+          let p1_name = m.player1 ? m.player1.username : '---';
+          let p2_name = m.player2 ? m.player2.username : '---';
+          let w_name = m.winner ? m.winner.username : 'Chưa đấu';
+          
+          return `
+          <div style="background:rgba(255,255,255,0.05);padding:10px;margin-bottom:8px;border-radius:8px;border-left:3px solid ${m.is_completed?'var(--neon-cyan)':'#666'}">
+            <div style="font-size:0.8rem;color:#888;margin-bottom:4px">${m.round_name} - Trận ${m.match_index+1}</div>
+            <div style="display:flex;gap:10px;align-items:center;">
+               <div style="flex:1;cursor:pointer;padding:6px;background:rgba(0,0,0,0.3);border-radius:4px;${m.winner_id===m.player1_id?'border:1px solid var(--neon-cyan)':''}" onclick="setMatchPlayer('${t.id}', '${m.id}', 'player1_id', '${m.player1_id}')">${esc(p1_name)}</div>
+               <div>VS</div>
+               <div style="flex:1;cursor:pointer;padding:6px;background:rgba(0,0,0,0.3);border-radius:4px;${m.winner_id===m.player2_id?'border:1px solid var(--neon-cyan)':''}" onclick="setMatchPlayer('${t.id}', '${m.id}', 'player2_id', '${m.player2_id}')">${esc(p2_name)}</div>
+            </div>
+            <div style="margin-top:8px;text-align:right">
+               Thắng: <b>${esc(w_name)}</b> 
+               <button class="btn btn-primary btn-sm" onclick="setMatchWinner('${t.id}', '${m.id}', '${m.player1_id}', '${m.player2_id}')">Set Winner</button>
+            </div>
+          </div>
+          `;
+      }).join('');
+      
+      let userOptions = users.map(u => `<option value="${u.id}">${esc(u.username)}</option>`).join('');
+      
+      $('app').innerHTML = `
+        <div class="animate-in fade-in slide-in">
+          <div class="page-header animate-in" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h1>Quản lý Giải Đấu</h1>
+                <p>Giải đấu: ${esc(t.name)}</p>
+              </div>
+              <button class="btn btn-outline" onclick="window.location.hash='#/admin'">Quay lại Bảng Quản Trị</button>
+            </div>
+          <div class="card" style="margin-top:20px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.05);"><div class="card-body">
+              <h4 style="margin-bottom:10px;color:var(--neon-pink)">Thông tin chung</h4>
+              <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
+                  <div class="form-group"><label class="form-label">Tên giải đấu</label><input class="form-input" id="edit_name" value="${esc(t.name)}"/></div>
+                  <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="edit_desc" value="${esc(t.description||'')}"/></div>
+                  <div style="display:flex;gap:12px;">
+                      <div class="form-group" style="flex:1"><label class="form-label">Bắt đầu</label><input class="form-input" type="datetime-local" id="edit_start" value="${t.start_time ? new Date(new Date(t.start_time).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : ''}"/></div>
+                      <div class="form-group" style="flex:1"><label class="form-label">Kết thúc</label><input class="form-input" type="datetime-local" id="edit_end" value="${t.end_time ? new Date(new Date(t.end_time).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : ''}"/></div>
+                  </div>
+                  <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="saveTournamentInfo('${t.id}')">💾 Lưu Thông Tin</button>
+              </div>
+          </div></div>
+
+          
+          <div style="display:flex;gap:20px;margin-top:20px">
+              <div style="flex:1">
+                  <h4>Tuyển thủ (${t.participants.length})</h4>
+                  <div style="display:flex;gap:10px;margin-bottom:10px">
+                     <select id="sel_user" class="form-input">${userOptions}</select>
+                     <button class="btn btn-primary" onclick="addParticipant('${t.id}')">Thêm</button>
+                  </div>
+                  <div style="max-height:300px;overflow-y:auto">${pList}</div>
+                  
+                  <div style="margin-top:20px;">
+                      <button class="btn btn-outline" style="width:100%" onclick="generateBracket('${t.id}')">⚡ Tự động tạo nhánh (Single Elim)</button>
+                  </div>
+              </div>
+              
+              <div style="flex:2">
+                  <h4>Sơ đồ thi đấu</h4>
+                  <div id="admin-bracket-render-target" style="width: 100%; overflow: auto; min-height: 400px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px;">Đang tải sơ đồ...</div>
+              </div>
+          </div>
+          
+          </div>
+      `;
+      setTimeout(() => {
+          renderTournamentBracket(t.id, 'admin-bracket-render-target');
+      }, 50);
+    }
+    
+    // Bind to window to allow nested onclicks to access it
+    window.currentTournamentRender = async () => {
+        t = await apiFetch(`/record-board/tournaments/${tid}`);
+        render();
+    };
+    
+    render();
+    
+  } catch(e) {
+      toast('Lỗi tải data nhánh', 'error');
+      $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`;
+  }
+}
+
+window.addParticipant = async function(tid) {
+    let uid = document.getElementById('sel_user').value;
+    if(!uid) return;
+    try {
+        await apiFetch(`/record-board/tournaments/${tid}/participants`, {method: 'POST', body: JSON.stringify({user_id: uid})});
+        await window.currentTournamentRender();
+    } catch(e) { toast(e.message, 'error'); }
+}
+window.removeParticipant = async function(tid, uid) {
+    if(!confirm('Xóa tuyển thủ này?')) return;
+    try {
+        await apiFetch(`/record-board/tournaments/${tid}/participants/${uid}`, {method: 'DELETE'});
+        await window.currentTournamentRender();
+    } catch(e) { toast(e.message, 'error'); }
+}
+window.generateBracket = async function(tid) {
+    if(!confirm('Tạo nhánh đấu sẽ XÓA TOÀN BỘ các trận đấu hiện tại. Bạn chắc chắn chứ?')) return;
+    try {
+        await apiFetch(`/record-board/tournaments/${tid}/generate`, {method: 'POST'});
+        toast('Đã tạo nhánh thành công!');
+        await window.currentTournamentRender();
+    } catch(e) { toast(e.message, 'error'); }
+}
+
+window.setMatchPlayer = async function(tid, mid, field, currentUid) {
+    let newUid = prompt("Nhập User ID để đổi người (để trống để xóa):", currentUid || "");
+    if(newUid === null) return;
+    try {
+        let payload = {};
+        payload[field] = newUid.trim() || null;
+        await apiFetch(`/record-board/tournaments/${tid}/matches/${mid}`, {method: 'PUT', body: JSON.stringify(payload)});
+        await window.currentTournamentRender();
+    } catch(e) { toast(e.message, 'error'); }
+}
+
+
+window.saveTournamentInfo = async function(tid) {
+    try {
+        let bodyData = {
+            name: document.getElementById('edit_name').value, 
+            description: document.getElementById('edit_desc').value, 
+            start_time: document.getElementById('edit_start').value ? new Date(document.getElementById('edit_start').value).toISOString() : null,
+            end_time: document.getElementById('edit_end').value ? new Date(document.getElementById('edit_end').value).toISOString() : null
+        };
+        await apiFetch(`/record-board/tournaments/${tid}`, {method: 'PUT', body: JSON.stringify(bodyData)});
+        toast('Đã lưu thông tin giải đấu!');
+        await window.currentTournamentRender();
+    } catch(e) {
+        toast('Lỗi cập nhật: ' + e.message, 'error');
+    }
+}
+
+window.setMatchWinner = async function(tid, mid, p1, p2) {
+    let winner = prompt(`Nhập 1 để cho Player 1 thắng, Nhập 2 để cho Player 2 thắng, hoặc nhập X để bỏ kết quả:`);
+    if(winner === null) return;
+    winner = winner.trim().toUpperCase();
+    let payload = { winner_id: null };
+    if(winner === '1') {
+        if(p1 === 'null') { toast('Player 1 rỗng!', 'error'); return; }
+        payload.winner_id = p1;
+    } else if(winner === '2') {
+        if(p2 === 'null') { toast('Player 2 rỗng!', 'error'); return; }
+        payload.winner_id = p2;
+    } else if (winner === 'X') {
+        payload.winner_id = '';
+    } else {
+        return;
+    }
+    
+    try {
+        await apiFetch(`/record-board/tournaments/${tid}/matches/${mid}`, {method: 'PUT', body: JSON.stringify(payload)});
+        toast('Cập nhật kết quả thành công');
+        await window.currentTournamentRender();
+    } catch(e) { toast(e.message, 'error'); }
+}
