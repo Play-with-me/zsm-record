@@ -203,19 +203,20 @@ class TournamentMatchResponse(BaseModel):
 class TournamentBase(BaseModel):
     name: str
     description: Optional[str] = None
-    map_id: str
-    start_time: datetime
-    end_time: datetime
+    map_id: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
     is_active: bool = True
     format: str = "SINGLE"
     status: str = "DRAFT"
 
 class TournamentCreate(TournamentBase):
-    pass
+    participants: List[str] = [] # List of user IDs
 
 class TournamentUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    map_id: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     is_active: Optional[bool] = None
@@ -224,7 +225,7 @@ class TournamentUpdate(BaseModel):
 
 class TournamentResponse(TournamentBase):
     id: str
-    map: MapResponse
+    map: Optional[MapResponse] = None
     class Config:
         from_attributes = True
 
