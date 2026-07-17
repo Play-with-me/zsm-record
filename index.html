@@ -184,7 +184,8 @@
     
     /* COLLAPSIBLE SIDEBAR */
     #app { margin-left: 260px; transition: margin-left 0.3s ease; }
-    .navbar { transition: width 0.3s ease; overflow: hidden; }
+    .navbar { transition: width 0.3s ease; overflow: visible; }
+    .navbar-inner { overflow: hidden; }
     .navbar.collapsed { width: 72px; }
     
     .navbar.collapsed .logo-text,
@@ -204,20 +205,34 @@
     #app.sidebar-collapsed { margin-left: 72px; }
     
     .sidebar-toggle { 
-        position: absolute; right: -14px; top: 28px; width: 28px; height: 28px; 
-        background: rgba(14,16,24,0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 50%;
+        position: fixed; left: 246px; top: 28px; width: 28px; height: 28px; 
+        background: rgba(14,16,24,0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;
         display: flex; align-items: center; justify-content: center; cursor: pointer;
-        color: var(--text-muted); z-index: 101; transition: all 0.25s ease;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.4);
+        color: var(--text-muted); z-index: 150; transition: left 0.3s ease, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.5);
     }
-    .sidebar-toggle:hover { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 8px rgba(212,175,55,0.4); }
+    .sidebar-toggle:hover { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px rgba(212,175,55,0.4); }
+    .navbar.collapsed + * .sidebar-toggle,
+    .navbar.collapsed ~ .sidebar-toggle { left: 58px; }
+    body.sidebar-is-collapsed .sidebar-toggle { left: 58px; }
     .sidebar-toggle svg { transition: transform 0.3s ease; }
-    .navbar.collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+    body.sidebar-is-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+    
+    /* Tooltip khi hover */
+    .sidebar-toggle::after {
+        content: attr(data-tooltip);
+        position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+        background: rgba(14,16,24,0.95); color: var(--text-muted); font-size: 0.75rem;
+        padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-toggle:hover::after { opacity: 1; }
     
     @media (max-width: 768px) {
         #app { margin-left: 0 !important; }
         #app.sidebar-collapsed { margin-left: 0 !important; }
-        .sidebar-toggle { display: none; }
+        .sidebar-toggle { display: none !important; }
         .navbar.collapsed { width: 100%; }
     }
 
@@ -809,9 +824,6 @@
 
 
 <nav class="navbar" id="sidebar">
-  <div class="sidebar-toggle" onclick="toggleSidebar()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>
-  </div>
   <div class="navbar-inner">
     <a href="#/" class="logo"><img src="Logo-clan.jpg" alt="TNX" width="32" height="32" decoding="async" style="height:32px; width:auto; border-radius:4px; object-fit:contain;"/> <span class="logo-text">TNX Record</span></a>
     <div class="nav-search">
@@ -828,6 +840,11 @@
     <div id="nav-auth"></div>
   </div>
 </nav>
+
+<!-- SIDEBAR TOGGLE BUTTON - outside nav to avoid overflow:hidden clip -->
+<div class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" data-tooltip="Thu gọn menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+</div>
 
 <div class="container" id="app">
   <div style="display:flex;align-items:center;justify-content:center;height:50vh;">
@@ -848,6 +865,9 @@ function toggleSidebar() {
     const app = document.getElementById('app');
     const isCollapsed = sidebar.classList.toggle('collapsed');
     app.classList.toggle('sidebar-collapsed', isCollapsed);
+    document.body.classList.toggle('sidebar-is-collapsed', isCollapsed);
+    const tooltip = document.getElementById('sidebar-toggle-btn');
+    if (tooltip) tooltip.setAttribute('data-tooltip', isCollapsed ? 'Mở rộng menu' : 'Thu gọn menu');
     localStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0');
 }
 // Init sidebar state on load
@@ -855,8 +875,11 @@ function toggleSidebar() {
     if (localStorage.getItem('sidebar_collapsed') === '1') {
         const sidebar = document.getElementById('sidebar');
         const app = document.getElementById('app');
+        const btn = document.getElementById('sidebar-toggle-btn');
         if (sidebar) sidebar.classList.add('collapsed');
         if (app) app.classList.add('sidebar-collapsed');
+        document.body.classList.add('sidebar-is-collapsed');
+        if (btn) btn.setAttribute('data-tooltip', 'Mở rộng menu');
     }
 })();
 </script>
