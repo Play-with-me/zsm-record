@@ -132,8 +132,8 @@ function renderNav() {
       </div>`;
   } else {
     el.innerHTML=`
-      <a href="#/login" class="btn btn-outline btn-sm">Đăng nhập</a>
-      <a href="#/register" class="btn btn-primary btn-sm">Đăng ký</a>`;
+      <div style="display:flex;flex-direction:column;gap:8px;width:100%;padding:0 12px;"><a href="#/login" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;">Đăng nhập</a>
+      <a href="#/register" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">Đăng ký</a></div>`;
   }
 }
 
