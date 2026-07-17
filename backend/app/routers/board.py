@@ -187,7 +187,6 @@ async def get_all_tournaments(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(models.Tournament)
         .options(selectinload(models.Tournament.map))
-        .order_by(models.Tournament.created_at.desc())
     )
     return result.scalars().all()
 
