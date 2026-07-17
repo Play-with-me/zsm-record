@@ -1768,6 +1768,7 @@ async function submitMatchAdminModal(winner_id) {
     try {
         await apiFetch(`/record-board/tournaments/${tid}/matches/${currentMatchModalMid}`, 'PUT', payload);
         showToast('Cập nhật kết quả thành công!', 'success');
+        clearApiCache();
         await renderTournamentBracket(tid);
     } catch(e) {
         showToast(e.message, 'error');
