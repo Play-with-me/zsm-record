@@ -149,7 +149,27 @@ async def create_tournament(
             if r == total - 2: return "Tứ Kết"
             return f"Vòng {r}"
             
-        for r in range(total_rounds, 0, -1):
+        num_r1_matches_needed = num_p - (bracket_size // 2)
+        if num_r1_matches_needed < 0: num_r1_matches_needed = 0
+        
+        r1_assignments = []
+        player_idx = 0
+        for i in range(bracket_size // 2):
+            p1 = None
+            p2 = None
+            if i < num_r1_matches_needed:
+                if player_idx < num_p: p1 = parts[player_idx]
+                player_idx += 1
+                if player_idx < num_p: p2 = parts[player_idx]
+                player_idx += 1
+            else:
+                if player_idx < num_p: p1 = parts[player_idx]
+                player_idx += 1
+            r1_assignments.append((p1, p2))
+            
+        auto_advanced = {}
+            
+        for r in range(1, total_rounds + 1):
             matches_in_round = bracket_size // (2 ** r)
             for i in range(matches_in_round):
                 mid = matches_dict[(r, i)]
@@ -159,12 +179,19 @@ async def create_tournament(
                 
                 p1_id = None
                 p2_id = None
+                winner_id = None
+                is_completed = False
                 
                 if r == 1:
-                    idx1 = i * 2
-                    idx2 = i * 2 + 1
-                    if idx1 < num_p: p1_id = parts[idx1]
-                    if idx2 < num_p: p2_id = parts[idx2]
+                    p1_id, p2_id = r1_assignments[i]
+                    if p1_id and not p2_id:
+                        winner_id = p1_id
+                        is_completed = True
+                        if next_mid:
+                            auto_advanced[(r + 1, i // 2, i % 2)] = p1_id
+                else:
+                    p1_id = auto_advanced.get((r, i, 0))
+                    p2_id = auto_advanced.get((r, i, 1))
                     
                 m = models.TournamentMatch(
                     id=mid,
@@ -174,10 +201,12 @@ async def create_tournament(
                     match_index=i,
                     player1_id=p1_id,
                     player2_id=p2_id,
+                    winner_id=winner_id,
+                    is_completed=is_completed,
                     next_match_id=next_mid
                 )
                 db.add(m)
-            await db.flush()
+        await db.flush()
                 
         try:
             await db.commit()
