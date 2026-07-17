@@ -1407,7 +1407,7 @@ async function renderAdmin() {
             <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
               <div class="form-group"><label class="form-label">Tên giải đấu *</label><input class="form-input" id="t_name" placeholder="VD: Mùa giải Mùa Hè"/></div>
               <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="t_desc" placeholder="Giải thưởng 100k"/></div>
-              <div id="tournament_users_checkboxes" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">Đang tải danh sách người chơi...</div>
+              <div id="tournament_users_checkboxes" style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">Đang tải danh sách người chơi...</div>
               <button class="btn btn-primary btn-sm" onclick="adminAdd('tournament')">+ Tạo Giải & Bốc Thăm (Random) Ngay</button>
             </div>
           </div></div>
@@ -1423,18 +1423,30 @@ async function renderAdmin() {
                 window._tournamentUsers = nonAdmins;
                 
                 // UI grid generation
-                el.innerHTML = nonAdmins.map(u => {
+                const headerHtml = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                    <div style="font-size:0.9rem; color:var(--text-secondary); font-weight:600;">Chọn tuyển thủ tham gia: <span id="t_selected_count" style="color:var(--primary); font-weight:bold; font-size:1.1rem;">0</span>/<span id="t_total_count">${nonAdmins.length}</span></div>
+                    <button class="btn btn-outline btn-sm" onclick="toggleAllTournamentUsers()" style="font-size:0.75rem; padding: 4px 12px; border-radius: 20px; text-transform:uppercase; letter-spacing:1px;"><i class="fas fa-check-double"></i> Chọn tất cả</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
+                `;
+                
+                const cardsHtml = nonAdmins.map(u => {
                     const uname = u.username || u.name || 'Unknown';
+                    const avatar = u.avatar ? `<img src="${u.avatar}" style="width:100%; height:100%; object-fit:cover;">` : `<div style="width:100%; height:100%; background:linear-gradient(135deg, #444, #222); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:bold;">${uname.substring(0,2).toUpperCase()}</div>`;
                     
                     return `
-                    <div class="t-user-card" id="tcard_${u.id}" onclick="toggleTournamentUser('${u.id}')" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; user-select: none;">
-                        <div class="t-chk" id="tchk_${u.id}" style="min-width: 18px; height: 18px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; transition: all 0.2s;"></div>
-                        <div style="width: 24px; height: 24px; border-radius: 50%; background: #333; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size:10px; color:#aaa; font-weight:bold;">${uname.substring(0,2).toUpperCase()}</div>
-                        <div style="font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${esc(uname)}</div>
+                    <div class="t-user-card" id="tcard_${u.id}" onclick="toggleTournamentUser('${u.id}')" style="background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); user-select: none; position: relative; overflow: hidden;">
+                        <div class="t-chk" id="tchk_${u.id}" style="min-width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; transition: all 0.3s; background: rgba(0,0,0,0.3); z-index: 2;"></div>
+                        <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 2;">${avatar}</div>
+                        <div style="font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; z-index: 2; color: #eee; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">${esc(uname)}</div>
+                        <div class="t-glow" id="tglow_${u.id}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 50% 50%, rgba(255,215,0,0.15) 0%, transparent 70%); opacity: 0; transition: opacity 0.3s; z-index: 1;"></div>
                     </div>
                     <input type="checkbox" class="t_user_checkbox" value="${u.id}" id="tcb_${u.id}" style="display:none;" />
                     `;
                 }).join('');
+                
+                el.innerHTML = headerHtml + cardsHtml + `</div>`;
                 
                 // Helper function for UI toggle
                 window.toggleTournamentUser = function(uid) {
@@ -1447,18 +1459,30 @@ async function renderAdmin() {
                     
                     if(cb.checked) {
                         card.style.borderColor = 'var(--primary)';
-                        card.style.background = 'rgba(255, 215, 0, 0.1)'; 
-                        card.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.2)';
-                        chk.style.borderColor = '#000';
+                        card.style.background = 'linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05))'; 
+                        card.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.15), inset 0 0 0 1px rgba(255, 215, 0, 0.3)';
+                        card.style.transform = 'translateY(-2px)';
+                        
+                        chk.style.borderColor = 'var(--primary)';
                         chk.style.background = 'var(--primary)';
-                        chk.innerHTML = '<span style="color:#000; font-size:12px; font-weight:bold;">✓</span>';
+                        chk.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.5)';
+                        chk.innerHTML = '<span style="color:#000; font-size:14px; font-weight:bold; line-height: 1;">✓</span>';
+                        
+                        const glow = document.getElementById('tglow_' + uid);
+                        if (glow) glow.style.opacity = '1';
                     } else {
-                        card.style.borderColor = 'rgba(255,255,255,0.1)';
-                        card.style.background = 'rgba(255,255,255,0.03)';
+                        card.style.borderColor = 'rgba(255,255,255,0.08)';
+                        card.style.background = 'linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))';
                         card.style.boxShadow = 'none';
-                        chk.style.borderColor = 'rgba(255,255,255,0.3)';
-                        chk.style.background = 'transparent';
+                        card.style.transform = 'none';
+                        
+                        chk.style.borderColor = 'rgba(255,255,255,0.2)';
+                        chk.style.background = 'rgba(0,0,0,0.3)';
+                        chk.style.boxShadow = 'none';
                         chk.innerHTML = '';
+                        
+                        const glow = document.getElementById('tglow_' + uid);
+                        if (glow) glow.style.opacity = '0';
                     }
                     
                     // Update count
@@ -1498,6 +1522,78 @@ async function renderAdmin() {
 
     window.adminTab=(t)=>{ tab=t; renderTab(); };
   
+async function renderTournamentBracket(tid) {
+  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
+  try {
+    const t = await apiFetch(`/record-board/tournaments/${tid}`);
+    
+    // Group matches by round_sequence
+    const rounds = {};
+    t.matches.forEach(m => {
+        if(!rounds[m.round_sequence]) rounds[m.round_sequence] = [];
+        rounds[m.round_sequence].push(m);
+    });
+    
+    // Sort rounds
+    const roundKeys = Object.keys(rounds).sort((a,b) => parseInt(a) - parseInt(b));
+    
+    let roundsHtml = roundKeys.map(rk => {
+        let matches = rounds[rk].sort((a,b) => a.match_index - b.match_index);
+        let roundName = matches[0].round_name;
+        
+        let matchesHtml = matches.map(m => {
+            let p1Name = m.player1 ? m.player1.username : '---';
+            let p2Name = m.player2 ? m.player2.username : '---';
+            
+            let isP1Winner = m.winner_id === m.player1_id;
+            let isP2Winner = m.winner_id === m.player2_id;
+            
+            let p1Style = isP1Winner ? 'color: var(--neon-cyan); font-weight: bold; text-shadow: var(--neon-glow-cyan);' : (m.is_completed ? 'color: #555; text-decoration: line-through;' : 'color: #eee;');
+            let p2Style = isP2Winner ? 'color: var(--neon-cyan); font-weight: bold; text-shadow: var(--neon-glow-cyan);' : (m.is_completed ? 'color: #555; text-decoration: line-through;' : 'color: #eee;');
+            
+            return `
+            <div style="background: linear-gradient(145deg, rgba(20,20,20,0.8), rgba(10,10,10,0.9)); border: 1px solid ${m.is_completed ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; padding: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 220px; position: relative;">
+                <div style="font-size: 0.75rem; color: #888; text-align: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Trận ${m.match_index + 1}</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 6px; ${p1Style}">
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p1Name)}</span>
+                    ${isP1Winner ? '<i class="fas fa-trophy" style="font-size:0.8rem"></i>' : ''}
+                </div>
+                <div style="display:flex; justify-content:space-between; ${p2Style}">
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(p2Name)}</span>
+                    ${isP2Winner ? '<i class="fas fa-trophy" style="font-size:0.8rem"></i>' : ''}
+                </div>
+            </div>`;
+        }).join('');
+        
+        return `
+        <div style="display: flex; flex-direction: column; align-items: center; min-width: 260px;">
+            <h3 style="color: var(--neon-pink); text-transform: uppercase; font-size: 1.2rem; margin-bottom: 20px; text-shadow: var(--neon-glow-pink); border-bottom: 2px solid var(--neon-pink); padding-bottom: 5px;">${roundName}</h3>
+            <div style="display: flex; flex-direction: column; justify-content: space-around; flex: 1; position: relative;">
+                ${matchesHtml}
+            </div>
+        </div>`;
+    }).join('');
+    
+    let html = `
+    <div class="animate-in fade-in slide-in">
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Sơ Đồ Thi Đấu: <span style="color:var(--neon-cyan)">${esc(t.name)}</span></h2>
+            <button class="btn btn-outline" onclick="window.location.hash='#/tournaments'">&larr; Quay lại</button>
+        </div>
+        
+        <div style="overflow-x: auto; padding: 20px 0; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; flex-direction: row; justify-content: flex-start; min-width: max-content; padding: 0 40px;">
+                ${roundsHtml}
+            </div>
+        </div>
+    </div>`;
+    
+    $('app').innerHTML = html;
+  } catch (e) {
+    $('app').innerHTML = `<div class="empty">Lỗi tải sơ đồ thi đấu: ${e.message}</div>`;
+  }
+}
+
 // --- ADMIN CRUD LOGIC ---
 window.adminDelete = async function(type, id, name) {
   const overlay = document.createElement('div');
@@ -1689,8 +1785,9 @@ async function router() {
   if(hash==='/inventory') return renderInventory();
   if(parts[0]==='video'&&parts[1]) return renderVideo(parts[1]);
   if(parts[0]==='profile'&&parts[1]) return renderProfile(parts[1]);
-  if(parts[0]==='insights') return renderInsights();
-  if(parts[0]==='tournaments') return renderTournaments();
+    if(parts[0]==='insights') return renderInsights();
+    if(parts[0]==='tournaments' && parts[1]==='bracket' && parts[2]) return renderTournamentBracket(parts[2]);
+    if(parts[0]==='tournaments') return renderTournaments();
   $('app').innerHTML='<div class="empty"><div class="empty-icon">&#128270;</div><p>Không tìm thấy trang.</p><a href="#/" style="color:var(--purple-light);margin-top:8px;display:inline-block">Về trang chủ &rarr;</a></div>';
 }
 
