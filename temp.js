@@ -102,7 +102,7 @@ function renderNav() {
   document.querySelectorAll('[data-route]').forEach(l => l.classList.toggle('active', l.dataset.route===hash));
   if(currentUser) {
     el.innerHTML=`
-      <a href="#/upload" class="btn btn-purple btn-sm">+ Đăng Record</a>
+      <a href="#/upload" class="btn btn-purple btn-sm" style="width:100%;justify-content:center;">+ Đăng Record</a>
       <div class="user-menu" id="user-menu">
         <button class="user-trigger" onclick="toggleUserMenu()">
           ${(() => {
