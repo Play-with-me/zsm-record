@@ -1765,8 +1765,14 @@ async function renderTournamentBracket(tid) {
             border-color: rgba(0, 255, 255, 0.4);
         }
         
+        .bracket-matches-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
         /* Connecting Lines */
-        .bracket-round:not(:last-child) .bracket-match-wrapper:nth-child(odd)::after {
+        .bracket-round:not(:last-child) .bracket-matches-container .bracket-match-wrapper:nth-child(odd)::after {
             content: '';
             position: absolute;
             top: 50%;
@@ -1777,7 +1783,7 @@ async function renderTournamentBracket(tid) {
             border-right: 2px solid rgba(0, 255, 255, 0.3);
             border-top-right-radius: 4px;
         }
-        .bracket-round:not(:last-child) .bracket-match-wrapper:nth-child(even)::after {
+        .bracket-round:not(:last-child) .bracket-matches-container .bracket-match-wrapper:nth-child(even)::after {
             content: '';
             position: absolute;
             bottom: 50%;
@@ -1788,7 +1794,7 @@ async function renderTournamentBracket(tid) {
             border-right: 2px solid rgba(0, 255, 255, 0.3);
             border-bottom-right-radius: 4px;
         }
-        .bracket-round:not(:first-child) .bracket-match-wrapper::before {
+        .bracket-round:not(:first-child) .bracket-matches-container .bracket-match-wrapper::before {
             content: '';
             position: absolute;
             top: 50%;
@@ -1918,7 +1924,9 @@ async function renderTournamentBracket(tid) {
         return `
         <div class="bracket-round">
             <div class="round-title">${roundName}</div>
-            ${matchesHtml}
+            <div class="bracket-matches-container">
+                ${matchesHtml}
+            </div>
         </div>`;
     }).join('');
     
