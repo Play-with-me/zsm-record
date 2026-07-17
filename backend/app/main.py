@@ -176,13 +176,26 @@ async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
-        # Try to add missing columns if they don't exist (for SQLite and Postgres)
+        # Try to add missing columns to avoid breaking if table already exists
         try:
             await conn.execute(text("ALTER TABLE tournaments ADD COLUMN format VARCHAR(50) DEFAULT 'SINGLE'"))
         except Exception:
             pass
         try:
             await conn.execute(text("ALTER TABLE tournaments ADD COLUMN status VARCHAR(50) DEFAULT 'DRAFT'"))
+        except Exception:
+            pass
+        # Drop NOT NULL constraints that were modified in models.py
+        try:
+            await conn.execute(text("ALTER TABLE tournaments ALTER COLUMN map_id DROP NOT NULL"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE tournaments ALTER COLUMN start_time DROP NOT NULL"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE tournaments ALTER COLUMN end_time DROP NOT NULL"))
         except Exception:
             pass
         
