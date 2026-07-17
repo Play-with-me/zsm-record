@@ -168,8 +168,14 @@ async def create_tournament(
             r1_assignments.append((p1, p2))
             
         auto_advanced = {}
+        # Pre-calculate auto-advanced BYE players for Round 2
+        for i in range(bracket_size // 2):
+            p1, p2 = r1_assignments[i]
+            if p1 and not p2:
+                # If this match has only p1 (BYE), p1 auto-advances
+                auto_advanced[(2, i // 2, i % 2)] = p1
             
-        for r in range(1, total_rounds + 1):
+        for r in range(total_rounds, 0, -1):
             matches_in_round = bracket_size // (2 ** r)
             for i in range(matches_in_round):
                 mid = matches_dict[(r, i)]
@@ -187,8 +193,6 @@ async def create_tournament(
                     if p1_id and not p2_id:
                         winner_id = p1_id
                         is_completed = True
-                        if next_mid:
-                            auto_advanced[(r + 1, i // 2, i % 2)] = p1_id
                 else:
                     p1_id = auto_advanced.get((r, i, 0))
                     p2_id = auto_advanced.get((r, i, 1))
@@ -206,7 +210,7 @@ async def create_tournament(
                     next_match_id=next_mid
                 )
                 db.add(m)
-        await db.flush()
+            await db.flush()
                 
         try:
             await db.commit()
