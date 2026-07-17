@@ -118,7 +118,7 @@ async def create_tournament(
     await db.commit()
     await db.refresh(new_t)
     
-    if len(t.participants) > 1 and t.format.value == 'SINGLE':
+    if len(t.participants) > 1 and t.format == 'SINGLE':
         uids = list(t.participants)
         random.shuffle(uids)
         
