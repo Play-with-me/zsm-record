@@ -112,18 +112,16 @@ async def create_tournament(
         end_time=t.end_time,
         is_active=t.is_active,
         format=t.format,
-        status=models.TournamentStatusEnum.ONGOING if len(t.participants) > 0 else models.TournamentStatusEnum.DRAFT
+        status=models.TournamentStatusEnum.ONGOING if len(t.participants) > 1 else models.TournamentStatusEnum.DRAFT
     )
     db.add(new_t)
     await db.commit()
     await db.refresh(new_t)
     
-    if len(t.participants) > 1 and t.format == 'SINGLE':
-        # Shuffle participants
+    if len(t.participants) > 1 and t.format.value == 'SINGLE':
         uids = list(t.participants)
         random.shuffle(uids)
         
-        # Add participants
         parts = []
         for i, uid in enumerate(uids):
             part = models.TournamentParticipant(tournament_id=new_t.id, user_id=uid, seed=i+1)
