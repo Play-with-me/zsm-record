@@ -309,7 +309,7 @@ async function doDelete(id, overlay) {
   try {
     await apiFetch(`/videos/${id}`,{method:'DELETE'});
     clearApiCache();
-    overlay.remove(); toast('Đã xóa record thành công!'); navigate('/');
+    $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`; toast('Đã xóa record thành công!'); navigate('/');
   } catch(e) { toast(e.message,'error'); }
 }
 
@@ -1036,7 +1036,7 @@ window.editProfile = async function(field) {
   window.customConfirm = function(msg, onConfirm) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);';
-  overlay.innerHTML = `
+  $('app').innerHTML = `
     <div class="card animate-in" style="min-width:300px;text-align:center;padding:24px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 20px 40px rgba(0,0,0,0.5);">
       <h3 style="margin-bottom:15px;font-size:1.2rem;color:var(--orange);">Xác nhận</h3>
       <p style="margin-bottom:20px;color:var(--text);font-size:0.95rem;">${msg}</p>
@@ -1047,8 +1047,8 @@ window.editProfile = async function(field) {
     </div>
   `;
   document.body.appendChild(overlay);
-  document.getElementById('btn-cancel').onclick = () => overlay.remove();
-  document.getElementById('btn-ok').onclick = () => { overlay.remove(); onConfirm(); };
+  document.getElementById('btn-cancel').onclick = () => $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`;
+  document.getElementById('btn-ok').onclick = () => { $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`; onConfirm(); };
 };
 
 window.buyShopItem = async function(itemId, price) {
@@ -1507,7 +1507,7 @@ async function renderAdmin() {
         });
         apiFetch('/record-board/tournaments').then(tList=>{
           if(tList && tList.length){
-            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Trạng thái</th><th>Thể thức</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${t.status}</td><td>${t.format}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="manageTournament('${t.id}')">Nhánh</button> <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
+            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Trạng thái</th><th>Thể thức</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${t.status}</td><td>${t.format}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="window.location.hash='#/admin/tournaments/bracket/' + '${t.id}'">Nhánh</button> <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
             const el = document.getElementById('admin-t-list');
             if(el) el.innerHTML = html;
           }else{
@@ -1527,7 +1527,7 @@ async function renderAdmin() {
 window.adminDelete = async function(type, id, name) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal">
+  $('app').innerHTML = `<div class="modal">
     <h3 style="margin-bottom:10px;color:var(--red)">Xác nhận Xóa</h3>
     <p style="margin-bottom:20px;">Bạn có chắc chắn muốn xóa <b>${esc(name)}</b>?<br/>Hành động này không thể hoàn tác.</p>
     <div class="modal-actions">
@@ -1611,7 +1611,7 @@ window.adminEdit = async function(type, id, itemObj) {
     `;
   }
 
-  overlay.innerHTML = `<div class="modal">
+  $('app').innerHTML = `<div class="modal">
     <h3 style="margin-bottom:15px;color:var(--neon-cyan)">Sửa Thông Tin</h3>
     ${formHtml}
     <div class="modal-actions" style="margin-top:20px;">
@@ -2063,11 +2063,12 @@ async function router() {
   if(path==='/'||path==='') return renderHome();
   if(path==='/login') return renderLogin();
   if(path==='/register') return renderRegister();
-
-  
-
   if(path==='/upload') return renderUpload();
   if(path==='/board') return renderBoard();
+    if(path.startsWith('/admin/tournaments/bracket/')) {
+      const tid = path.split('/')[4];
+      if(tid) return window.renderAdminTournamentBracket(tid);
+    }
   if(path==='/admin') return renderAdmin();
   if(path==='/shop') return renderShop();
   if(path==='/inventory') return renderInventory();
@@ -2104,7 +2105,7 @@ window.adminEditUser = function(id, curName, curEmail, curCoins) {
     e.preventDefault();
     try {
       await apiFetch(`/users/${id}/admin`, {method:'PUT', body:JSON.stringify({username: e.target.un.value, email: e.target.em.value, coins: parseInt(e.target.coins.value)})});
-      overlay.remove(); toast('Đã cập nhật!'); window.adminTab('users');
+      $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`; toast('Đã cập nhật!'); window.adminTab('users');
     } catch(err){ toast(err.message, 'error'); }
   };
 };
@@ -2115,7 +2116,7 @@ window.editRecord = async function(id) {
     const [maps, cars, pets] = await Promise.all([cachedApiFetch('/maps', 300000), cachedApiFetch('/cars', 300000), cachedApiFetch('/pets', 300000)]);
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.innerHTML = `<div class="modal" style="max-width:500px">
+    $('app').innerHTML = `<div class="modal" style="max-width:500px">
       <h3>Sửa Record</h3>
       <form id="erf" style="display:flex;flex-direction:column;gap:14px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -2165,7 +2166,7 @@ window.editRecord = async function(id) {
       try {
         await apiFetch(`/videos/${id}`, {method:'PUT', body:JSON.stringify(payload)});
         clearApiCache();
-        overlay.remove(); toast('Đã cập nhật record!');
+        $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`; toast('Đã cập nhật record!');
         if(window.location.hash.includes('board')) loadBoard(); else if(window.location.hash.includes('profile')) renderProfile(window.location.hash.split('/')[2]); else { renderHome(); }
       } catch(err){ toast(err.message, 'error'); }
     };
@@ -2321,12 +2322,12 @@ window.viewAvatar = function(url) {
   const overlay = document.createElement('div');
   overlay.className = 'quick-view-overlay active';
   overlay.style.zIndex = '10000';
-  overlay.innerHTML = `
+  $('app').innerHTML = `
     <span class="btn-close-modal" style="position:fixed; top:20px; right:20px; font-size:2.5rem; color:#fff; cursor:pointer;" onclick="this.parentElement.remove()">&times;</span>
     <img src="${url}" style="max-width:90vw; max-height:90vh; object-fit:cover;width:100%;height:100%; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.8);" />
   `;
   overlay.onclick = (e) => {
-    if(e.target === overlay) overlay.remove();
+    if(e.target === overlay) $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`;
   };
   document.body.appendChild(overlay);
 }
@@ -2417,7 +2418,7 @@ window.shareVideo = function(videoId) {
 window.delComment = function(videoId, commentId) {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.innerHTML = `<div class="modal">
+    $('app').innerHTML = `<div class="modal">
       <h3>Xóa bình luận</h3>
       <p>Bạn có chắc chắn muốn xóa bình luận này?</p>
       <div class="modal-actions">
@@ -2431,7 +2432,7 @@ window.delComment = function(videoId, commentId) {
 window.doDelComment = async function(videoId, commentId, overlay) {
     try {
         await apiFetch(`/videos/${videoId}/comments/${commentId}`, {method: 'DELETE'});
-        if (overlay) overlay.remove();
+        if (overlay) $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`;
         toast('Đã xóa bình luận!');
         const el = document.getElementById('comment-' + commentId);
         if(el) el.remove();
@@ -2528,7 +2529,7 @@ window.openInventory = async function() {
   overlay.appendChild(modal);
   document.body.appendChild(overlay);
   
-  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
+  overlay.onclick = (e) => { if(e.target === overlay) $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`; };
   
   try {
     const items = await apiFetch('/shop/my-items');
@@ -2620,11 +2621,8 @@ window.clearAllShopItems = async function() {
 
 
 // --- BRACKET MANAGER ---
-window.manageTournament = async function(tid) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-content" style="max-width:900px;width:90%"><div class="spinner"></div></div>`;
-  document.body.appendChild(overlay);
+window.renderAdminTournamentBracket = async function(tid) {
+  $('app').innerHTML = `<div class="animate-in"><div class="skeleton" style="height:400px;border-radius:12px"></div></div>`;
   
   try {
     const t = await apiFetch(`/record-board/tournaments/${tid}`);
@@ -2661,9 +2659,15 @@ window.manageTournament = async function(tid) {
       
       let userOptions = users.map(u => `<option value="${u.id}">${esc(u.username)}</option>`).join('');
       
-      overlay.innerHTML = `
-        <div class="modal-content" style="max-width:900px;width:90%;max-height:90vh;overflow-y:auto;">
-          <h3>Quản lý Nhánh: ${esc(t.name)}</h3>
+      $('app').innerHTML = `
+        <div class="animate-in fade-in slide-in">
+          <div class="page-header animate-in" style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h1>Quản lý Nhánh</h1>
+                <p>Giải đấu: ${esc(t.name)}</p>
+              </div>
+              <button class="btn btn-outline" onclick="window.location.hash='#/admin'">Quay lại Bảng Quản Trị</button>
+            </div>
           
           <div style="display:flex;gap:20px;margin-top:20px">
               <div style="flex:1">
@@ -2685,10 +2689,7 @@ window.manageTournament = async function(tid) {
               </div>
           </div>
           
-          <div style="text-align:right;margin-top:20px;">
-            <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Đóng</button>
           </div>
-        </div>
       `;
       setTimeout(() => {
           renderTournamentBracket(t.id, 'admin-bracket-render-target');
@@ -2705,7 +2706,7 @@ window.manageTournament = async function(tid) {
     
   } catch(e) {
       toast('Lỗi tải data nhánh', 'error');
-      overlay.remove();
+      $('app').innerHTML = `<div class='empty'>Lỗi: Không tải được nhánh</div>`;
   }
 }
 
