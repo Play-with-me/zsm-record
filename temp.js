@@ -1332,7 +1332,79 @@ async function renderAdmin() {
       ${tab==='maps'?`
         <div class="card"><div class="card-body">
           <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Bản đồ mới</div>
-          <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="admin-add-form">
+            <div class="form-group"><label class="form-label">Tên bản đồ *</label><input class="form-input" id="mn" placeholder="Tên bản đồ"/></div>
+            <div class="form-group" style="max-width:90px"><label class="form-label">Độ khó (sao)</label><input class="form-input" id="md" type="number" min="1" max="10" value="1"/></div>
+            <button class="btn btn-primary btn-sm" onclick="adminAdd('map')">+ Thêm</button>
+          </div>
+        </div></div>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Độ khó</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <tbody>${maps.map(m=>`<tr><td style="font-weight:600">${esc(m.name)}</td><td><span style="color:var(--yellow)">${'★'.repeat(m.difficulty||1)}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${m.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('map','${m.id}', '${encodeURIComponent(JSON.stringify(m))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('map','${m.id}','${esc(m.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
+        </table></div>`:
+      tab==='cars'?`
+        <div class="card"><div class="card-body">
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Siêu xe mới</div>
+          <div class="admin-add-form">
+            <div class="form-group"><label class="form-label">Tên xe *</label><input class="form-input" id="cn" placeholder="Tên xe"/></div>
+            <div class="form-group" style="max-width:90px"><label class="form-label">Phân khúc</label><input class="form-input" id="cc" placeholder="S, A..."/></div>
+            <button class="btn btn-sm" style="background:var(--orange);color:#fff" onclick="adminAdd('car')">+ Thêm</button>
+          </div>
+        </div></div>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Phân khúc</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <tbody>${cars.map(c=>`<tr><td style="font-weight:600">${esc(c.name)}</td><td><span class="badge badge-orange">${esc(c.car_class||'?')}</span></td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${c.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('car','${c.id}', '${encodeURIComponent(JSON.stringify(c))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('car','${c.id}','${esc(c.name).replace(/'/g, "\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
+        </table></div>`:
+      tab==='pets'?`<div class="card"><div class="card-body">
+          <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Pet mới</div>
+          <div class="admin-add-form">
+            <div class="form-group"><label class="form-label">Tên Pet *</label><input class="form-input" id="pn" placeholder="Tên Pet"/></div>
+            <button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="adminAdd('pet')">+ Thêm</button>
+          </div>
+        </div></div>
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <tbody>${pets.map(p=>`<tr><td style="font-weight:600">${esc(p.name)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${p.id}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('pet','${p.id}', '${encodeURIComponent(JSON.stringify(p))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('pet','${p.id}','${esc(p.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')}</tbody>
+        </table></div>`:
+      tab==='users'?`
+        <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Avatar</th><th>Tài khoản</th><th>Email</th><th>Quyền</th><th>Số dư</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+        <tbody>${users.map(u=>`<tr>
+          <td>${u.avatar?`<img src="${esc(optimizedImage(u.avatar, 48))}" width="28" height="28" loading="lazy" decoding="async" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>`:`<div class="avatar avatar-sm">${esc(u.username[0].toUpperCase())}</div>`}</td>
+          <td style="font-weight:600">${esc(u.username)}</td>
+          <td style="color:var(--text-dim)">${esc(u.email)}</td>
+          <td><span class="badge ${u.role==='ADMIN'?'badge-red':'badge-blue'}">${esc(u.role)}</span></td>
+          <td>🪙 ${formatCoins(u.coins||0)}</td>
+          <td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${u.id}</td>
+          <td><button class="btn btn-sm btn-outline" onclick="adminEditUser('${u.id}', '${esc(u.username)}', '${esc(u.email)}', ${u.coins})">&#9998; Sửa</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete(\'user\',\'${u.id}\',\'${esc(u.username).replace(/\'/g, "\\\'")}\')">🗑️</button></td>
+        </tr>`).join('')}</tbody>
+        </table></div>`:
+        tab==='shop'?`
+          <div class="card"><div class="card-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-size:0.85rem;font-weight:700;">Thêm Vật phẩm mới</div>
+              <button class="btn btn-danger btn-sm" onclick="if(confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ vật phẩm trong Shop?')) clearAllShopItems()">Xóa Tất Cả Vật Phẩm</button>
+            </div>
+            <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="form-group"><label class="form-label">Tên *</label><input class="form-input" id="s_name" placeholder="VD: Khung rồng"/></div>
+              <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="s_desc" placeholder="Hiệu ứng rồng bao quanh"/></div>
+              <div style="display:flex;gap:12px;">
+                <div class="form-group" style="flex:1"><label class="form-label">Giá (Z-Coins) *</label><input class="form-input" type="number" id="s_price" value="100"/></div>
+                <div class="form-group" style="flex:1"><label class="form-label">Loại (type) *</label><select class="form-select" id="s_type">
+                  <option value="name_color">name_color</option>
+                  <option value="avatar_frame">avatar_frame</option>
+                  <option value="badge">badge</option>
+                </select></div>
+              </div>
+              <div class="form-group"><label class="form-label">Giá trị (Metadata)</label><input class="form-input" id="s_meta" placeholder="#ff0000 hoặc CSS box-shadow..."/></div>
+                <div class="form-group"><label class="form-label">URL Icon (Tùy chọn)</label><input class="form-input" id="s_icon" placeholder="https://api.iconify..."/></div>
+              <button class="btn btn-primary btn-sm" onclick="adminAdd('shopItem')">+ Thêm Vật Phẩm</button>
+            </div>
+          </div></div>
+          <div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên</th><th>Loại</th><th>Giá</th><th>Mã ID</th><th>Hành động</th></tr></thead>
+          <tbody>${shopItems?.map(s=>`<tr><td style="font-weight:600">${esc(s.name)}</td><td><span class="badge badge-purple">${esc(s.item_type)}</span></td><td>🪙 ${formatCoins(s.price)}</td><td style="font-family:monospace;font-size:0.7rem;color:var(--text-dim)">${s.id}</td><td><button class=\"btn btn-outline btn-sm\" style=\"padding:2px 8px;font-size:0.7rem;margin-right:5px;\" onclick=\"adminEdit('shopItem','${s.id}', '${encodeURIComponent(JSON.stringify(s))}')\">✏️</button><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('shopItem','${s.id}','${esc(s.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('')||''}</tbody>
+          </table></div>
+        `:
+        tab==='tournaments'?`
+          <div class="card"><div class="card-body">
+            <div style="font-size:0.85rem;font-weight:700;margin-bottom:10px">Thêm Giải Đấu Mới</div>
+            <div class="admin-add-form" style="display:flex;flex-direction:column;gap:12px;">
               <div class="form-group"><label class="form-label">Tên giải đấu *</label><input class="form-input" id="t_name" placeholder="VD: Mùa giải Mùa Hè"/></div>
               <div class="form-group"><label class="form-label">Mô tả</label><input class="form-input" id="t_desc" placeholder="Giải thưởng 100k"/></div>
               <div id="tournament_users_checkboxes" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">Đang tải danh sách người chơi...</div>
@@ -1354,10 +1426,9 @@ async function renderAdmin() {
                   nonAdmins.map(u => `<label style="display:flex;align-items:center;gap:8px;margin-bottom:5px;cursor:pointer;"><input type="checkbox" class="t_user_checkbox" value="${u.id}"/> ${esc(u.username)}</label>`).join('');
             }
         });
-        
         apiFetch('/record-board/tournaments').then(tList=>{
           if(tList && tList.length){
-            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Trạng thái</th><th>Thể thức</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${t.status}</td><td>${t.format}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
+            const html = '<div class="card" style="overflow:hidden"><table class="data-table"><thead><tr><th>Tên giải</th><th>Trạng thái</th><th>Thể thức</th><th>Hành động</th></tr></thead><tbody>' + tList.map(t=>`<tr><td style="font-weight:600">${esc(t.name)}</td><td>${t.status}</td><td>${t.format}</td><td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="manageTournament('${t.id}')">Nhánh</button> <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminEdit('tournament','${t.id}', '${encodeURIComponent(JSON.stringify(t))}')">✏️</button> <button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:0.7rem" onclick="adminDelete('tournament','${t.id}','${esc(t.name).replace(/'/g, "\\'")}')">🗑️</button></td></tr>`).join('') + '</tbody></table></div>';
             const el = document.getElementById('admin-t-list');
             if(el) el.innerHTML = html;
           }else{
@@ -1516,10 +1587,10 @@ window.doAdminEdit = async function(type, id, modal) {
         const t=$('s_type').value;
         if(!n || !p || !t){toast('Vui lòng nhập đủ Tên, Giá, Loại','error');return;}
         await apiFetch('/shop/admin/items',{method:'POST',body:JSON.stringify({name:n, description:$('s_desc').value, price:parseInt(p), item_type:t, metadata_value:$('s_meta').value})});
-      } else if (type==='pet') {
+      } else if(type === 'pet') {
         const n=$('pn').value; if(!n){toast('Vui lòng nhập tên','error');return;}
         await apiFetch('/admin/pets',{method:'POST',body:JSON.stringify({name:n})});
-      } else if (type==='tournament') {
+      } else if (type === 'tournament') {
         const n = $('t_name').value;
         if(!n){toast('Vui lòng nhập tên giải','error');return;}
         const checkboxes = document.querySelectorAll('.t_user_checkbox:checked');
