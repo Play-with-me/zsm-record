@@ -1982,7 +1982,7 @@ async function renderTournamentBracket(tid) {
             
             let matchTitle = roundName === 'Chung Kết' ? 'Chung Kết' : `${roundName} ${m.match_index + 1}`;
             
-            let adminAttrs = (window.currentUser && window.currentUser.role === 'ADMIN' && !isBye && m.id) 
+            let adminAttrs = (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'ADMIN' && !isBye && m.id) 
                 ? `onclick="openMatchAdminModal('${m.id}')" style="cursor:pointer;" class="bracket-match-wrapper admin-clickable"` 
                 : `class="bracket-match-wrapper ${isBye ? 'is-bye' : ''}"`;
 
