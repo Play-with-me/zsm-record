@@ -176,6 +176,16 @@ async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         
+        # Try to add missing columns if they don't exist (for SQLite and Postgres)
+        try:
+            await conn.execute(text("ALTER TABLE tournaments ADD COLUMN format VARCHAR(50) DEFAULT 'SINGLE'"))
+        except Exception:
+            pass
+        try:
+            await conn.execute(text("ALTER TABLE tournaments ADD COLUMN status VARCHAR(50) DEFAULT 'DRAFT'"))
+        except Exception:
+            pass
+        
     try:
         pass
         # await seed_shop.seed_shop()  # Disabled to prevent auto-restoring deleted items

@@ -91,8 +91,8 @@ class Tournament(Base):
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
-    format = Column(Enum(TournamentFormatEnum), default=TournamentFormatEnum.SINGLE, nullable=False)
-    status = Column(Enum(TournamentStatusEnum), default=TournamentStatusEnum.DRAFT, nullable=False)
+    format = Column(Enum(TournamentFormatEnum, native_enum=False, length=50), default=TournamentFormatEnum.SINGLE, nullable=False)
+    status = Column(Enum(TournamentStatusEnum, native_enum=False, length=50), default=TournamentStatusEnum.DRAFT, nullable=False)
 
     map = relationship("Map")
     participants = relationship("TournamentParticipant", back_populates="tournament", cascade="all, delete-orphan")
