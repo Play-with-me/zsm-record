@@ -177,6 +177,7 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
         
     try:
+        pass
         # await seed_shop.seed_shop()  # Disabled to prevent auto-restoring deleted items
     except Exception as e:
         print(f"Error seeding shop: {e}")
